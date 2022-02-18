@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<Atlas>
+	<Texture filename="textbox_long_thinborder.tex" />
+	<Elements>
+		<Element name="textbox_long_thinborder.tex" u1="0.000488281" u2="0.780762" v1="0.222656" v2="0.996094" />
+	</Elements>
+</Atlas>
