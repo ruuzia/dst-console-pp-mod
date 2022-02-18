@@ -74,7 +74,7 @@ local label_height = 40
 --local fontsize = 30
 local edit_width = 700
 local edit_bg_padding = 50
-local baseypos = 50
+local baseypos = 100
 
 local function adjust_label_height(console)
     local nlcount = console.console_edit:GetString():subcount('\n')
@@ -210,9 +210,25 @@ decorate(ConsoleScreen, "DoInit", function(_DoInit, self, ...)
                     t = t[tnames[i]]
                     if not indexable(t) then break end
                 end
-                if type(t) == "table" then
-                    print("AddWordPredictionDictionary")
-                    local keys = table.getkeys(t)
+                if indexable(t) then
+                    local keys = {}
+                    local onlyfuncs = str:sub(pos,pos) == ":"
+                    if type(t) == "table" then
+                        for k,v in pairs(t) do
+                            if type(k) == "string" and (not onlyfuncs or type(v) == "function") then
+                                table.insert(keys, k)
+                            end
+                        end
+                    end
+
+                    local mt = G.getmetatable(t)
+                    if mt and type(mt.__index) == "table" then
+                        for k,v in pairs(mt.__index) do
+                            if type(k) == "string" and (not onlyfuncs or type(v) == "function") then
+                                table.insert(keys, k)
+                            end
+                        end
+                    end
                     local delim = str:sub(expressionstart, pos)
                     if dynamicdelims[delim] then
                         for _,v in ipairs(self.console_edit.prediction_widget.word_predictor.dictionaries) do
