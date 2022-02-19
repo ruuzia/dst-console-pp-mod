@@ -1,9 +1,8 @@
 require "debugcommands"
-local TextEdit = require "widgets/textedit"
 
 local G = GLOBAL
 
----[[
+--[[
 require "debugkeys"
 G.CHEATS_ENABLED = true
 --]]
@@ -19,6 +18,7 @@ Assets = {
     Asset("ATLAS", "images/textbox_long_thinborder.xml"),
 }
 
+local TextEdit = require "widgets/textedit"
 
 local config_rtoggle = GetModConfigData("remotetoggle")
 modassert(config_rtoggle ~= nil, "could not get config data \"remotetoggle\"")
@@ -70,18 +70,18 @@ end
 
 local ConsoleScreen = require "screens/consolescreen"
 
-local label_height = 40
---local fontsize = 30
+local label_height = 50
+local fontsize = 30
 local edit_width = 700
 local edit_bg_padding = 50
-local baseypos = 100
+local baseypos = 75
 
 local function adjust_label_height(console)
     local nlcount = console.console_edit:GetString():subcount('\n')
-    console.label_height = label_height + 35 * nlcount
-	console.root:SetPosition(console.root:GetPosition().x, baseypos + label_height * nlcount / 2, 0)
-
-    if console.edit_bg:GetSize() then
+    console.label_height = label_height + fontsize * nlcount
+	console.root:SetPosition(console.root:GetPosition().x, baseypos + (fontsize - 2) * nlcount / 2, 0)
+    local wcurr, hcurr = console.edit_bg:GetSize()
+    if wcurr and hcurr and hcurr ~= console.label_height then
         console.edit_bg:ScaleToSize( console.edit_width + edit_bg_padding, console.label_height )
         console.console_edit:SetRegionSize( console.edit_width, console.label_height )
     end
@@ -111,7 +111,7 @@ local function missing_closing_statement(lua)
                        :gsub("%-%-[^\n]+", "")       --remove single line comments
                        :gsub("(['\"]).-%1", "")      --remove single and double quote strings
 
-                       if encoded:find("%[=*%[") then return true end
+    if encoded:find("%[=*%[") then return true end
 
     local statements = {["function"] = 0, ["do"] = 0, ["then"] = 0, ["end"] = 0, ["repeat"] = 0, ["until"] = 0}
     for word in encoded:gmatch("%w+") do
@@ -134,40 +134,42 @@ end
 decorate(ConsoleScreen, "DoInit", function(_DoInit, self, ...)
     _DoInit(self, ...)
 
-    local commands = {}
-    local debugs = {}
-    local thes = {}
+    local words = {
+        c_ = {},
+        d_ = {},
+        The = {},
+        Get = {},
+        Set = {},
+    }
 
-    if commands[1] then return end
-    for k,_ in pairs(G) do
-        if k:find("^c_") then
-            table.insert(commands, k:sub(3))
-        elseif k:find("^d_") then
-            table.insert(debugs, k:sub(3))
-        elseif k:find("^The") then
-            table.insert(thes, k:sub(4))
+    for key in pairs(G) do
+        for delim in pairs(words) do
+            if key:starts(delim) then
+                table.insert(words[delim], key:sub(#delim+1))
+            end
         end
     end
 
     for _,v in ipairs(self.console_edit.prediction_widget.word_predictor.dictionaries) do
         if v.delim == "c_" then
-            v.words = commands
+            v.words = words["c_"]
             break
         end
     end
 
-    self.edit_bg:SetTexture("images/textbox_long_thinborder.xml", "textbox_long_thinborder.tex" )
 
-    self.console_edit:AddWordPredictionDictionary({words = debugs, delim = "d_", num_chars = 0})
-    self.console_edit:AddWordPredictionDictionary({words = thes, delim = "The", num_chars = 0})
+    self.console_edit:AddWordPredictionDictionary {words = words.d_ , delim = "d_" , num_chars = 0}
+    self.console_edit:AddWordPredictionDictionary {words = words.The, delim = "The", num_chars = 0}
+    self.console_edit:AddWordPredictionDictionary {words = words.Get, delim = "Get", num_chars = 0}
+    self.console_edit:AddWordPredictionDictionary {words = words.Set, delim = "Set", num_chars = 0}
+
     --better implement myself
     --self.console_edit.allow_newline = true
 
     -- game does this now!
     --self.console_edit.validrawkeys[G.KEY_V] = true
-   -- self.console_edit.validrawkeys[G.KEY_DELETE] = true
-   -- self.console_edit.validrawkeys[G.KEY_BACKSPACE] = true
 
+    self.edit_bg:SetTexture("images/textbox_long_thinborder.xml", "textbox_long_thinborder.tex" )
 	self.root:SetPosition(100, baseypos, 0)
     self.label_height = label_height
     self.edit_width = edit_width
@@ -187,9 +189,6 @@ decorate(ConsoleScreen, "DoInit", function(_DoInit, self, ...)
     local dynamicdelims = {}
 
     decorate(self.console_edit, "OnRawKey", function (_OnRawKey, textedit, key, down)
-        if down then
-            adjust_label_height(self)
-        end
         if down and (key == G.KEY_PERIOD or (key == G.KEY_SEMICOLON and TheInput:IsKeyDown(G.KEY_SHIFT))) then
             local str = self.console_edit:GetString()
             local pos = self.console_edit.inst.TextEditWidget:GetEditCursorPos()
@@ -253,8 +252,8 @@ decorate(ConsoleScreen, "DoInit", function(_DoInit, self, ...)
         if down and not remote_toggle_keys[key] then
             self.ctrl_pasting = true
         end
-            
-        return _OnRawKey(textedit, key, down)
+
+        return _OnRawKey(textedit, key, down) and adjust_label_height(self) or adjust_label_height(self)
     end)
 end)
 
@@ -326,7 +325,6 @@ function ConsoleScreen:OnRawKeyHandler(key, down)
         end
 
     elseif not down and remote_toggle_keys[key] then
-        print("debug", self.ctrl_pasting)
         if not self.ctrl_pasting then
             self:ToggleRemoteExecute()
         end
@@ -402,7 +400,7 @@ function G.ExecuteConsoleCommand(fnstr, guid, x, z)
             result[i] = tostring(result[i])
         end
 
-        nolineprint(unpack(result, 2))
+        print(unpack(result, 2))
     end
 
     if guid ~= nil then

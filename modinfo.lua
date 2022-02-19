@@ -1,18 +1,36 @@
+---@diagnostic disable:lowercase-global
 
 name = "Console++"
 author = "Friendly Grass"
-description = [[
+description = [=[
+This clientside mod implements many improvements to the DST command console.
+  - Full multiline capability
+    - Shift+Enter starts a new line
+    - Enter starts a new line if code is missing closing `]]`, `end`, etc
+  - More word completions
+  - Dynamic word completions (only in local)
+  - Remote/Local will not be toggled when using key combinations
+  - Disable Server Un/Paused messages (only in local)
+  - Print expression results (like Python REPL) (only in local)
+  - "=2 + 3" shorthand for "print(2 + 3)" (like Lua REPL)
+  - Ctrl+Backspace (all textedits)
+  - Tab (all textedits)
 
-]]
-version = "1.0.1"
+TODO:
+  - Improvements console log
+  - Serverside version of this mod
+  - Implement copying text to clipboard (NOT possible in current API)
+
+]=]
+version = "1.0.2"
 dst_compatible = true
 forge_compatible = false
 gorge_compatible = false
 dont_starve_compatible = false
 client_only_mod = true
 all_clients_require_mod = false
---icon_atlas = "modicon.xml"
---icon = "modicon.tex"
+icon_atlas = "modicon.xml"
+icon = "modicon.tex"
 forumthread = ""
 api_version_dst = 10
 priority = 0
