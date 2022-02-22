@@ -22,7 +22,7 @@ TODO:
   - Implement copying text to clipboard (NOT possible in current API)
 
 ]=]
-version = "1.0.2"
+version = "1.0.3"
 dst_compatible = true
 forge_compatible = false
 gorge_compatible = false

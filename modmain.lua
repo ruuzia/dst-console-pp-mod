@@ -2,89 +2,57 @@ require "debugcommands"
 
 local G = GLOBAL
 
---[[
-require "debugkeys"
-G.CHEATS_ENABLED = true
---]]
 
-local TheInput, pcall, loadstring, Ents, nolineprint, Vector3, unpack, setmetatable, rawget =
-G.TheInput, G.pcall, G.loadstring, G.Ents, G.nolineprint, G.Vector3, G.unpack, G.setmetatable, G.rawget
+local TheInput, pcall, loadstring, Ents, Vector3, unpack, setmetatable, rawget =
+G.TheInput, G.pcall, G.loadstring, G.Ents, G.Vector3, G.unpack, G.setmetatable, G.rawget
 --local printwrap    = _G.printwrap
 --local global       = _G.global
-local setfenv      = G.setfenv
+local setfenv, getfenv, TheSim = G.setfenv, G.getfenv, G.TheSim
 
-Assets = {
-    Asset("IMAGE", "images/textbox_long_thinborder.tex"),
-    Asset("ATLAS", "images/textbox_long_thinborder.xml"),
-}
+local DEBUG = not modname:find("^workshop-")
 
-local TextEdit = require "widgets/textedit"
+if DEBUG then
+    require "debugkeys"
+    G.CHEATS_ENABLED = true
+end
 
-local config_rtoggle = GetModConfigData("remotetoggle")
-modassert(config_rtoggle ~= nil, "could not get config data \"remotetoggle\"")
-local remote_toggle_keys = {
-    [G.KEY_LCTRL] = config_rtoggle == "ctrl",
-    [G.KEY_RCTRL] = config_rtoggle == "ctrl",
-    [G.KEY_LALT] = config_rtoggle == "alt",
-    [G.KEY_RALT] = config_rtoggle == "alt",
-}
+------------------------------------------
+------------------------------------------
 
----@param tbl table
+--for hot reload - debug mode only?
+---@type {loc: table, name: string, old: function}[]
+local impurities = { __mode = "kv" }
+function impurities.new(loc, name, old)
+    if not DEBUG then return end
+    local data = {loc=loc, name=name, old=old}
+    table.insert(impurities, data)
+    setmetatable(data, impurities)
+end
+
+---@param loc table
 ---@param idx string
 ---@param wrapper fun(old: function, ...): any
-local function decorate(tbl, idx, wrapper)
-  local origin = tbl[idx]
-  tbl[idx] = function(...)
+local function decorate(loc, idx, wrapper)
+  local origin = modassert(loc[idx], "no decorator function")
+  impurities.new(loc, idx, origin)
+  loc[idx] = function(...)
     return wrapper(origin, ...)
   end
 end
 
 ---@param fn function
 ---@param overrides table<string, any>
-local function modfenv(fn, overrides)
-    setfenv(fn, setmetatable(overrides, {__index = G}))
+local function modGfenv(fn, overrides)
+    return setfenv(fn, setmetatable(overrides, { __index = G }))
 end
-
-local ignores = {["Server Unpaused"] = true, ["Server Autopaused"] = true, ["Server Paused"] = false}
-
-modfenv(G.OnServerPauseDirty, {
-    print = function(...)
-        if ignores[(...)] then return end
-        print(...)
-    end;
-})
-
-AddGamePostInit(function()
-    TheFrontEnd.consoletext:SetPosition(-100, 100, 0)
-end)
 
 ---@param str string
 ---@param ptrn string
 ---@return number
-function string.subcount(str, ptrn)
+local function str_subcount(str, ptrn)
     local i = 0
     for _ in str:gmatch(ptrn) do i = i + 1 end
     return i
-end
-
-
-local ConsoleScreen = require "screens/consolescreen"
-
-local label_height = 50
-local fontsize = 30
-local edit_width = 700
-local edit_bg_padding = 50
-local baseypos = 75
-
-local function adjust_label_height(console)
-    local nlcount = console.console_edit:GetString():subcount('\n')
-    console.label_height = label_height + fontsize * nlcount
-	console.root:SetPosition(console.root:GetPosition().x, baseypos + (fontsize - 2) * nlcount / 2, 0)
-    local wcurr, hcurr = console.edit_bg:GetSize()
-    if wcurr and hcurr and hcurr ~= console.label_height then
-        console.edit_bg:ScaleToSize( console.edit_width + edit_bg_padding, console.label_height )
-        console.console_edit:SetRegionSize( console.edit_width, console.label_height )
-    end
 end
 
 ---@param s string
@@ -102,6 +70,91 @@ local function str_getlinebounds(s, idx)
 
     return starti, endi
 end
+
+---@param t table
+---@param name string
+---@param expected string
+local function assert_definition_source(t, name, expected)
+    local info = G.debug.getinfo(t[name], "S")
+    if info.source == expected or info.source:find("^"..MODROOT) then return end
+    print(("[%s] ======== WARNING ==============="):format(modname))
+    print(("[%s] %q definition expected in file %q, but found in %q. Running with an incompatible mod?")
+          :format(modname, name, expected, info.source))
+    print(("[%s] ================================"):format(modname))
+end
+
+------------------------------------------
+------------------------------------------
+
+---@param reveal boolean
+function G.c_revealmap(reveal)
+    if G.TheWorld == nil or G.TheWorld.ismastersim == false or G.ThePlayer == nil then
+        print("c_revealmap called in bad state")
+        return
+    end
+    if reveal == false then return G.MapHideAll() end
+
+    local MapExplorer = G.ThePlayer.player_classified.MapExplorer
+    local size = G.TheWorld.Map:GetSize() * 2
+    for x = -size, size, 35 do
+        for y = -size, size, 35 do
+            MapExplorer:RevealArea(x, 0, y)
+        end
+    end
+end
+------------------------------------------
+------------------------------------------
+
+Assets = {
+    Asset("IMAGE", "images/textbox_long_thinborder.tex"),
+    Asset("ATLAS", "images/textbox_long_thinborder.xml"),
+}
+
+local TextEdit = require "widgets/textedit"
+local ConsoleScreen = require "screens/consolescreen"
+
+local config_rtoggle = GetModConfigData("remotetoggle")
+modassert(config_rtoggle ~= nil, "could not get config data \"remotetoggle\"")
+local remote_toggle_keys = {
+    [G.KEY_LCTRL] = config_rtoggle == "ctrl",
+    [G.KEY_RCTRL] = config_rtoggle == "ctrl",
+    [G.KEY_LALT] = config_rtoggle == "alt",
+    [G.KEY_RALT] = config_rtoggle == "alt",
+}
+
+local ignores = {["Server Unpaused"] = true, ["Server Autopaused"] = true, ["Server Paused"] = false}
+
+local dynamicdelims = {}
+
+modGfenv(G.OnServerPauseDirty, {
+    print = function(...)
+        if ignores[(...)] then return end
+        print(...)
+    end;
+})
+
+AddGamePostInit(function()
+    TheFrontEnd.consoletext:SetPosition(-100, 100, 0)
+end)
+
+
+local label_height = 50
+local fontsize = 30
+local edit_width = 850
+local edit_bg_padding = 50
+local baseypos = 75
+
+local function adjust_label_height(console)
+    local nlcount = str_subcount(console.console_edit:GetString(), '\n')
+    console.label_height = label_height + fontsize * nlcount
+	console.root:SetPosition(console.root:GetPosition().x, baseypos + (fontsize - 2) * nlcount / 2, 0)
+    local wcurr, hcurr = console.edit_bg:GetSize()
+    if wcurr and hcurr and hcurr ~= console.label_height then
+        console.edit_bg:ScaleToSize( console.edit_width + edit_bg_padding, console.label_height )
+        console.console_edit:SetRegionSize( console.edit_width, console.label_height )
+    end
+end
+
 
 ---@param lua string
 local function missing_closing_statement(lua)
@@ -124,12 +177,73 @@ local function missing_closing_statement(lua)
         or statements["repeat"] > statements["until"]
 end
 
-local function indexable(t)
-    if type(t) == "table" then return true end
-    local mt = G.getmetatable(t)
-    if type(mt) ~= "table" then return false end
-    return type(mt.__index) == "table"
+local function dynamic_complete(textedit)
+    local str = textedit:GetString()
+    local pos = textedit.inst.TextEditWidget:GetEditCursorPos()
+    local tnames = {}
+    local searchpos = pos
+    local expressionstart
+    repeat
+        local wstart, word = str:sub(1, searchpos):match("()([%w_]+)%s*[.:]$")
+        if wstart == nil then break end
+        expressionstart = wstart
+        searchpos = wstart - 1
+        table.insert(tnames, word)
+    until false
+    if #tnames <= 0 then return end
+
+    local t = setmetatable({}, {__index=function(_, k) return rawget(G, k) end})
+    local mt
+    for i = #tnames, 1, -1 do
+        t = t[tnames[i]]
+        mt = G.getmetatable(t)
+        if type(t) ~= "table" and (mt == nil or type(mt.__index) ~= "table") then return end
+    end
+
+    local keys = {}
+    local onlyfuncs = str:sub(pos,pos) == ":"
+    if type(t) == "table" then
+        for k,v in pairs(t) do
+            if type(k) == "string" and (not onlyfuncs or type(v) == "function") then
+                table.insert(keys, k)
+            end
+        end
+    end
+    if mt and type(mt.__index) == "table" then
+        for k,v in pairs(mt.__index) do
+            if type(k) == "string" and (not onlyfuncs or type(v) == "function") then
+                table.insert(keys, k)
+            end
+        end
+    end
+    local delim = str:sub(expressionstart, pos)
+    if dynamicdelims[delim] then
+        for _,v in ipairs(textedit.prediction_widget.word_predictor.dictionaries) do
+            if v.delim == delim then
+                v.words = keys
+                break
+            end
+        end
+    else
+        textedit:AddWordPredictionDictionary {
+            words = keys,
+            delim = delim,
+            num_chars = 0,
+            GetDisplayString = function (word) return word end
+        }
+        dynamicdelims[delim] = true
+    end
+    textedit.prediction_widget:RefreshPredictions()
 end
+
+local function console_edit_ValidateChar(_ValidateChar, textedit, c)
+    if c == '\n' or c == '\t' then
+        return true
+    end
+
+    return _ValidateChar(textedit, c)
+end
+
 
 decorate(ConsoleScreen, "DoInit", function(_DoInit, self, ...)
     _DoInit(self, ...)
@@ -177,83 +291,22 @@ decorate(ConsoleScreen, "DoInit", function(_DoInit, self, ...)
     self.console_edit:SetRegionSize(self.edit_width, self.label_height)
 	self.console_remote_execute:SetPosition( -self.edit_width*0.5 -200*0.5 - 35, 0 )
 
-    decorate(self.console_edit, "ValidateChar", function(_ValidateChar, textedit, c)
-        --G.TheGlobalInstance:DoTaskInTime(0, function() adjust_label_height(self) end)
-        if c == '\n' or c == '\t' then
-            return true
-        end
+    decorate(self.console_edit, "ValidateChar", console_edit_ValidateChar)
 
-        return _ValidateChar(textedit, c)
-    end)
-
-    local dynamicdelims = {}
+    dynamicdelims = {}
 
     decorate(self.console_edit, "OnRawKey", function (_OnRawKey, textedit, key, down)
         if down and (key == G.KEY_PERIOD or (key == G.KEY_SEMICOLON and TheInput:IsKeyDown(G.KEY_SHIFT))) then
-            local str = self.console_edit:GetString()
-            local pos = self.console_edit.inst.TextEditWidget:GetEditCursorPos()
-            local tnames = {}
-            local searchpos = pos
-            local expressionstart
-            repeat
-                local wstart, word = str:sub(1, searchpos):match("()([%w_]+)%s*[.:]$")
-                if wstart == nil then break end
-                expressionstart = wstart
-                searchpos = wstart - 1
-                table.insert(tnames, word)
-            until false
-
-            local t = setmetatable({}, {__index=function(_, k) return rawget(G, k) end})
-            if #tnames > 0 then
-                for i = #tnames, 1, -1 do
-                    t = t[tnames[i]]
-                    if not indexable(t) then break end
-                end
-                if indexable(t) then
-                    local keys = {}
-                    local onlyfuncs = str:sub(pos,pos) == ":"
-                    if type(t) == "table" then
-                        for k,v in pairs(t) do
-                            if type(k) == "string" and (not onlyfuncs or type(v) == "function") then
-                                table.insert(keys, k)
-                            end
-                        end
-                    end
-
-                    local mt = G.getmetatable(t)
-                    if mt and type(mt.__index) == "table" then
-                        for k,v in pairs(mt.__index) do
-                            if type(k) == "string" and (not onlyfuncs or type(v) == "function") then
-                                table.insert(keys, k)
-                            end
-                        end
-                    end
-                    local delim = str:sub(expressionstart, pos)
-                    if dynamicdelims[delim] then
-                        for _,v in ipairs(self.console_edit.prediction_widget.word_predictor.dictionaries) do
-                            if v.delim == delim then
-                                v.words = keys
-                                break
-                            end
-                        end
-                    else
-                        self.console_edit:AddWordPredictionDictionary {
-                            words = keys,
-                            delim = delim,
-                            num_chars = 0,
-                            GetDisplayString = function (word) return word end
-                        }
-                        dynamicdelims[delim] = true
-                    end
-                    self.console_edit.prediction_widget:RefreshPredictions()
-                end
-            end
+            dynamic_complete(textedit)
         end
         if down and not remote_toggle_keys[key] then
             self.ctrl_pasting = true
         end
+        local res = _OnRawKey(textedit, key, down)
 
-        return _OnRawKey(textedit, key, down) and adjust_label_height(self) or adjust_label_height(self)
+        adjust_label_height(self)
+
+        return res
     end)
 end)
 
@@ -288,9 +341,59 @@ decorate(TextEdit, "OnRawKey", function(_OnRawKey, self, key, down)
     return _OnRawKey(self, key, down)
 end)
 
+decorate(ConsoleScreen, "OnControl", function (_OnControl, self, control, down)
+    if not down and control == G.CONTROL_ACCEPT and self.console_edit._mouse_set_cursor then
+        self.console_edit._mouse_set_cursor = nil
+        return true
+    elseif not down and control == G.CONTROL_OPEN_DEBUG_CONSOLE and TheInput:IsKeyDown(G.KEY_SHIFT) then
+        return true
+    else
+        return _OnControl(self, control, down)
+    end
+end)
+
+local FONTDATA = require "fontdata"
+
+function TextEdit:OnMouseButton(button, down, x, y)
+    if not down or button ~= G.MOUSEBUTTON_LEFT then return false end
+    x = x / self:GetScale().x
+    y = y / self:GetScale().y
+
+    local textposmid_x, textposmid_y = self:GetWorldPosition():Get()
+    textposmid_x = textposmid_x / self:GetScale().x
+    textposmid_y = textposmid_y / self:GetScale().y
+    local size_x, size_y = self:GetRegionSize()
+    local x_text_start, y_text_start = textposmid_x - size_x / 2, textposmid_y + size_y / 2
+    local row = math.floor((y_text_start - y) / self.size)
+
+    ---@type string
+    local str = self:GetString()
+
+    local _, rowstartidx = str:find("^"..("[^\n]*\n"):rep(row))
+    if rowstartidx == nil then
+        _, rowstartidx = str_getlinebounds(str, #str)
+    end
+    local len = str:utf8len()
+    local utf8rowstart = str:sub(1, rowstartidx):utf8len()
+    local index = rowstartidx
+    local width = x - x_text_start
+    for i = utf8rowstart+1, len do
+        local c = str:utf8sub(i, i)
+        if c == "\n" then break end
+        local fontwidth = self.size * FONTDATA[G.DEFAULTFONT][c]
+        width = width - fontwidth
+        if width < 0 then break end
+        index = index + #c
+    end
+    self.inst.TextEditWidget:SetEditCursorPos(index)
+    self._mouse_set_cursor = true
+    return true
+end
+
 -- runs after TextEdit:OnRawKey if it didnt return false
 -- so only for some special non-input keys
 -- completely overriding because im changing basically everything
+assert_definition_source(ConsoleScreen, "OnRawKeyHandler", "scripts/screens/consolescreen.lua")
 function ConsoleScreen:OnRawKeyHandler(key, down)
     local pos = self.console_edit.inst.TextEditWidget:GetEditCursorPos()
     local str = self.console_edit:GetString()
@@ -298,7 +401,7 @@ function ConsoleScreen:OnRawKeyHandler(key, down)
 
     if down and key == G.KEY_UP then
         local linestart = str_getlinebounds(str, pos)
-        local plstart, plend = str_getlinebounds(str, linestart-2)
+        local plstart, plend = str_getlinebounds(str, (linestart or 0)-2)
 
         if plstart then
             self.console_edit.inst.TextEditWidget:SetEditCursorPos(math.min(pos - linestart + plstart, plend))
@@ -332,27 +435,19 @@ function ConsoleScreen:OnRawKeyHandler(key, down)
     end
 end
 
-
 decorate(ConsoleScreen, "OnTextEntered", function(_OnTextEntered, self)
+    self.console_edit:SetEditing(true)
     if TheInput:IsKeyDown(G.KEY_SHIFT) or missing_closing_statement(self.console_edit:GetString()) then
-        self.console_edit:SetEditing(true)
         self.console_edit:OnTextInput('\n')
-        return
+    elseif TheInput:IsKeyDown(G.KEY_LCTRL) then
+        self:Run()
+    else
+        self.console_edit:SetEditing(false)
+        _OnTextEntered(self)
     end
-    _OnTextEntered(self)
 end)
 
-
---ConsoleScreen:Close()
-decorate(ConsoleScreen, "OnControl", function(_OnControl, self, control, down)
-    if not down and control == G.CONTROL_OPEN_DEBUG_CONSOLE and TheInput:IsKeyDown(G.KEY_SHIFT) then
-        return true
-    end
-    return _OnControl(self, control, down)
-end)
-
-
-
+assert_definition_source(ConsoleScreen, "Run", "scripts/screens/consolescreen.lua")
 function ConsoleScreen:Run()
     local CONSOLE_HISTORY = G.GetConsoleHistory()
 	local fnstr = self.console_edit:GetString()
@@ -374,6 +469,7 @@ function ConsoleScreen:Run()
 	end
 end
 
+assert_definition_source(G, "ExecuteConsoleCommand", "scripts/mainfunctions.lua")
 ---@param fnstr string
 ---@param guid number
 ---@param x number
@@ -408,4 +504,22 @@ function G.ExecuteConsoleCommand(fnstr, guid, x, z)
     end
     TheInput.overridepos = nil
 end
+
+G.d_reloadconsolemod = DEBUG and function()
+    for _, v in ipairs(impurities) do
+        if v.loc then
+            v.loc[v.name] = v.old
+        end
+    end
+    local isworldgen = CHARACTERLIST == nil
+    local isfrontend = ReloadFrontEndAssets ~= nil
+    local newenv = G.CreateEnvironment(modname, isworldgen, isfrontend)
+    newenv.modinfo = modinfo
+    for i,v in ipairs(G.ModManager.mods) do
+        if v == env then
+            G.ModManager.mods[i] = env
+        end
+    end
+	G.ModManager:InitializeModMain(modname, newenv, "modmain.lua")
+end or nil
 
