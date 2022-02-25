@@ -81,8 +81,9 @@ Decorate(ConsoleScreen, "DoInit", function(_DoInit, self, ...)
     self.console_edit:SetRegionSize(self.edit_width, self.label_height)
 	self.console_remote_execute:SetPosition( -self.edit_width*0.5 -200*0.5 - 35, 0 )
 
-    self.console_edit:EnableWordWrap(true)
-    self.console_edit:EnableWhitespaceWrap(true)
+    --self.console_edit:EnableWordWrap(true)
+    --self.console_edit:EnableWhitespaceWrap(true)
+    --self.console_edit:EnableScrollEditWindow(true)
 
     Decorate(self.console_edit, "ValidateChar", console_edit_ValidateChar)
 
@@ -107,7 +108,6 @@ Decorate(ConsoleScreen, "OnControl", function (_OnControl, self, control, down)
         self.console_edit._mouse_set_cursor = nil
         return true
     else]]if not down and control == G.CONTROL_OPEN_DEBUG_CONSOLE and TheInput:IsKeyDown(G.KEY_SHIFT) then
-        print("OnControl - down")
         return true
     else
         return _OnControl(self, control, down)
