@@ -106,7 +106,8 @@ end)
 
 local Text = require "widgets/text"
 function TextEdit:OnMouseButton(button, down, mouse_x, mouse_y)
-    if not down or button ~= G.MOUSEBUTTON_LEFT then return false end
+    print(button, down, self.editing)
+    if not down or button ~= G.MOUSEBUTTON_LEFT then return true end
     mouse_x = mouse_x / self:GetScale().x
     mouse_y = mouse_y / self:GetScale().y
 
@@ -139,12 +140,13 @@ function TextEdit:OnMouseButton(button, down, mouse_x, mouse_y)
     self.inst.TextEditWidget:SetEditCursorPos(a_rowstart + #textbox:GetString())
     textbox:Kill()
 
-    self.enable_accept_control = false
+    --this should prevent the TextEdit:OnControl(G.CONTROL_ACCEPT, down) thats about to happen from shutting down textedit
+    --test world selection screen textedits and in-game chat input
+    self.enable_accept_control = not self.editing
     return true
 end
 
 Decorate(TextEdit, "OnControl", function (_OnControl, self, control, down)
-   return _OnControl(self, control, down) or control == G.CONTROL_ACCEPT
+    return _OnControl(self, control, down)-- or control == G.CONTROL_ACCEPT
 end)
-
 
