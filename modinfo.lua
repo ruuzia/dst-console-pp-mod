@@ -49,6 +49,19 @@ configuration_options = {
     },
     default = "ctrl"
 },
+{
+    --GetModConfigData("tab")
+    name = "tab",
+    label = "Tab Behaviour",
+    hover = "behaviour of tab key in text inputs",
+    options = {
+        { data = "default", description = "Complete/Insert", hover = "Complete predictions. If there are none, insert 4 spaces." },
+        { data = "spaces", description = "Insert", hover = "Always insert equivalent spaces." },
+        { data = "complete", description = "Complete", hover = "Always try to complete prediction" },
+        { data = "next", description = "Tab Through", hover = "Tab Through predictions (Ctrl + Tab to go backwards)." },
+    },
+    default = ""
+},
 
 }
 

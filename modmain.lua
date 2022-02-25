@@ -2,6 +2,7 @@ require "debugcommands"
 
 local G = GLOBAL
 
+G.ConsolePPEnv = env
 
 local TheInput, pcall, loadstring, Ents, Vector3, unpack, setmetatable =
 G.TheInput, G.pcall, G.loadstring, G.Ents, G.Vector3, G.unpack, G.setmetatable
@@ -120,10 +121,11 @@ G.d_reloadconsolemod = DEBUG and function()
     newenv.TheGlobalInstance = TheGlobalInstance
     for i,v in ipairs(G.ModManager.mods) do
         if v == env then
-            G.ModManager.mods[i] = env
+            G.ModManager.mods[i] = newenv
         end
     end
 	G.ModManager:InitializeModMain(modname, newenv, "modmain.lua")
+    G.KnownModIndex:UpdateSingleModInfo(modname)
 end or nil
 ------------------------------------------
 ------------------------------------------
@@ -135,8 +137,12 @@ Assets = {
 
 Config = {
     rtoggle = GetModConfigData("remotetoggle"),
+    tab = GetModConfigData("tab"),
 }
-modassert(Config.rtoggle ~= nil, "could not get config data \"remotetoggle\"")
+
+Config.TabInsert = Config.tab == "default" or Config.tab == "spaces"
+Config.TabComplete = Config.tab == "default" or Config.tab == "complete"
+Config.TabNext = Config.tab == "next"
 
 local ignores = {["Server Unpaused"] = true, ["Server Autopaused"] = true, ["Server Paused"] = false}
 
@@ -169,7 +175,7 @@ function CodeMissingClosingStatement(lua)
         or statements["repeat"] > statements["until"]
 end
 
-AssertDefinitionSource(G, "ExecuteConsoleCommand", "mainfunctions.lua")
+AssertDefinitionSource(G, "ExecuteConsoleCommand", "scripts/mainfunctions.lua")
 ---@param fnstr string
 ---@param guid number
 ---@param x number

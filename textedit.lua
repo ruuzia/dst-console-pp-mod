@@ -4,7 +4,6 @@ local TheInput = G.TheInput
 local TextEdit = require "widgets/textedit"
 --local FONTDATA = require "fontdata"
 
-local dynamicdelims = {}
 function ConsoleEditDynamicComplete(self)
     local str = self:GetString()
     local pos = self.inst.TextEditWidget:GetEditCursorPos()
@@ -45,30 +44,26 @@ function ConsoleEditDynamicComplete(self)
         end
     end
     local delim = str:sub(expressionstart, pos)
-    if dynamicdelims[delim] then
-        for _,v in ipairs(self.prediction_widget.word_predictor.dictionaries) do
-            if v.delim == delim then
-                v.words = keys
-                break
-            end
+    for _,v in ipairs(self.prediction_widget.word_predictor.dictionaries) do
+        if v.delim == delim then
+            v.words = keys
+            return self.prediction_widget:RefreshPredictions()
         end
-    else
-        self:AddWordPredictionDictionary {
-            words = keys,
-            delim = delim,
-            num_chars = 0,
-            GetDisplayString = function (word) return word end
-        }
-        dynamicdelims[delim] = true
     end
-    self.prediction_widget:RefreshPredictions()
+    self:AddWordPredictionDictionary {
+        words = keys,
+        delim = delim,
+        num_chars = 0,
+        GetDisplayString = function (word) return word end
+    }
+    return self.prediction_widget:RefreshPredictions()
 end
 
 -- Changes for ALL textedits - not just console edit
 -- First OnRawKey to run
 Decorate(TextEdit, "OnRawKey", function(_OnRawKey, self, key, down)
     if down then
-        if key == G.KEY_BACKSPACE and TheInput:IsKeyDown(G.KEY_LCTRL) then
+        if (key == G.KEY_BACKSPACE or key == G.KEY_DELETE) and TheInput:IsKeyDown(G.KEY_LCTRL) then
             local str = self:GetString()
             local pos = self.inst.TextEditWidget:GetEditCursorPos()
             if pos > 0 then
@@ -84,11 +79,25 @@ Decorate(TextEdit, "OnRawKey", function(_OnRawKey, self, key, down)
             end
             return true
 
-        elseif key == G.KEY_TAB and not self.nextTextEditWidget then
-            for _= 1, 4 do
-                self:OnTextInput(' ')
+        elseif key == G.KEY_TAB then
+            if Config.TabComplete and self.prediction_widget.word_predictor.prediction then
+                self:ApplyWordPrediction(self.prediction_widget.active_prediction_btn)
+            elseif Config.TabInsert and self.nextTextEditWidget == nil then
+                for i = 1, 4 do
+                    --\t just inserts a space anyways - handled in self.inst.TextEditWidget engine
+                    self:OnTextInput(' ')
+                end
+            elseif Config.TabNext then
+                local active_btn_id = self.prediction_widget.active_prediction_btn
+                local prediction_btns = self.prediction_widget.prediction_btns
+                if active_btn_id then
+                    if TheInput:IsKeyDown(G.KEY_LCTRL) then
+                        prediction_btns[active_btn_id > 1 and active_btn_id - 1 or #prediction_btns]:Select()
+                    else
+                        prediction_btns[active_btn_id < #prediction_btns and active_btn_id + 1 or 1]:Select()
+                    end
+                end
             end
-            return true
         end
     end
 
