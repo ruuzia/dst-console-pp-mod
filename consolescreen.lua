@@ -35,6 +35,25 @@ local function console_edit_ValidateChar(_ValidateChar, textedit, c)
     return _ValidateChar(textedit, c)
 end
 
+
+local CONSOLE_HISTORY = G.GetConsoleHistory()
+CONSOLE_HISTORY.remotetoggle = CONSOLE_HISTORY.remotetoggle or {}
+
+Decorate(G, "SetConsoleHistory", function(_SetConsoleHistory, history)
+    _SetConsoleHistory(history)
+    CONSOLE_HISTORY = G.GetConsoleHistory()
+    history.remotetoggle = history.remotetoggle or {}
+end)
+
+Decorate(ConsoleScreen, "OnBecomeActive", function(_OnBecomeActive, self)
+    _OnBecomeActive(self)
+    local rmtoggle = CONSOLE_HISTORY.remotetoggle[#CONSOLE_HISTORY]
+    if rmtoggle ~= nil then
+        print(rmtoggle)
+        self:ToggleRemoteExecute(rmtoggle)
+    end
+end)
+
 Decorate(ConsoleScreen, "DoInit", function(_DoInit, self, ...)
     _DoInit(self, ...)
 
@@ -121,7 +140,6 @@ AssertDefinitionSource(ConsoleScreen, "OnRawKeyHandler", "scripts/screens/consol
 function ConsoleScreen:OnRawKeyHandler(key, down)
     local pos = self.console_edit.inst.TextEditWidget:GetEditCursorPos()
     local str = self.console_edit:GetString()
-    local CONSOLE_HISTORY = G.GetConsoleHistory()
 
     if down and key == G.KEY_UP then
         local linestart = StrGetLineStart(str, pos)
@@ -133,6 +151,11 @@ function ConsoleScreen:OnRawKeyHandler(key, down)
         elseif #CONSOLE_HISTORY > 0 then
             self.history_idx = self.history_idx and math.max(1, self.history_idx - 1) or #CONSOLE_HISTORY
             self.console_edit:SetString( CONSOLE_HISTORY[ self.history_idx ] )
+
+            local rmtoggle = CONSOLE_HISTORY.remotetoggle[self.history_idx]
+            if rmtoggle ~= nil then
+                self:ToggleRemoteExecute(rmtoggle)
+            end
         end
 
     elseif down and key == G.KEY_DOWN then
@@ -148,6 +171,10 @@ function ConsoleScreen:OnRawKeyHandler(key, down)
             else
                 self.history_idx = math.min(#CONSOLE_HISTORY, self.history_idx + 1)
                 self.console_edit:SetString(CONSOLE_HISTORY[self.history_idx])
+                local rmtoggle = CONSOLE_HISTORY.remotetoggle[self.history_idx]
+                if rmtoggle ~= nil then
+                    self:ToggleRemoteExecute(rmtoggle)
+                end
             end
         end
 
@@ -173,13 +200,15 @@ end)
 
 AssertDefinitionSource(ConsoleScreen, "Run", "scripts/screens/consolescreen.lua")
 function ConsoleScreen:Run()
-    local CONSOLE_HISTORY = G.GetConsoleHistory()
+    CONSOLE_HISTORY.remotetoggle = CONSOLE_HISTORY.remotetoggle or {}
+
 	local fnstr = self.console_edit:GetString()
 
     G.SuUsedAdd("console_used")
 
 	if fnstr ~= "" and fnstr ~= CONSOLE_HISTORY[#CONSOLE_HISTORY] then
 		table.insert( CONSOLE_HISTORY, fnstr )
+        CONSOLE_HISTORY.remotetoggle[#CONSOLE_HISTORY] = self.toggle_remote_execute
 	end
 
 	if self.toggle_remote_execute then
@@ -192,3 +221,4 @@ function ConsoleScreen:Run()
 		G.ExecuteConsoleCommand(fnstr)
 	end
 end
+
