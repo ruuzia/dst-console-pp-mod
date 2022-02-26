@@ -2,27 +2,35 @@ local G = GLOBAL
 
 local TheInput = G.TheInput
 local TextEdit = require "widgets/textedit"
---local FONTDATA = require "fontdata"
+local rawget = G.rawget
 
 function ConsoleEditDynamicComplete(self)
     local str = self:GetString()
     local pos = self.inst.TextEditWidget:GetEditCursorPos()
     local tnames = {}
+    local calls = {}
+    local indexers = {}
     local searchpos = pos
     local expressionstart
     repeat
-        local wstart, word = str:sub(1, searchpos):match("()([%w_]+)%s*[.:]$")
+        local wstart, word, call, indexer = str:sub(1, searchpos):match("()([%w_]+)%s*(%(?%)?)%s*([.:])$")
         if wstart == nil then break end
         expressionstart = wstart
         searchpos = wstart - 1
         table.insert(tnames, word)
+        calls[#tnames] = call
+        indexers[#tnames] = indexer
     until false
     if #tnames <= 0 then return end
 
-    local t = G.setmetatable({}, {__index=function(_, k) return G.rawget(G, k) end})
+    local t = G.setmetatable({}, {__index=function(_, k) return rawget(G, k) end})
     local mt
     for i = #tnames, 1, -1 do
+        local prevtbl = t
         t = t[tnames[i]]
+        if type(t) == "function" and calls[i] == "()" then
+            t = t(indexers[i+1] == ":" and prevtbl or nil)
+        end
         mt = G.getmetatable(t)
         if type(t) ~= "table" and (mt == nil or type(mt.__index) ~= "table") then return end
     end
@@ -44,6 +52,7 @@ function ConsoleEditDynamicComplete(self)
         end
     end
     local delim = str:sub(expressionstart, pos)
+    print(delim, keys, #keys)
     for _,v in ipairs(self.prediction_widget.word_predictor.dictionaries) do
         if v.delim == delim then
             v.words = keys
