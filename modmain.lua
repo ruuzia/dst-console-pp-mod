@@ -60,10 +60,13 @@ local nlchar = ('\n'):byte()
 ---@param s string
 ---@param idx number
 ---@return number?
-function StrGetLineStart(s, idx)
+function StrGetLineStart(s, idx, utf8)
+    local uidx_dif = 0
     for i = idx, 1, -1 do
         if s:byte(i) == nlchar then
-            return i + 1 --one char *after* newline
+            return uidx_dif + i + 1 --one *after* newline
+        elseif utf8 and s:byte(i) >= 128 + 64 then
+            uidx_dif = uidx_dif - 1
         end
     end
     return 1
@@ -72,21 +75,24 @@ end
 ---@param s string
 ---@param idx number
 ---@return number?
-function StrGetLineEnd(s, idx)
+function StrGetLineEnd(s, idx, utf8)
+    local uidx_dif = 0
     for i = idx+1, #s do
         if s:byte(i) == nlchar then
-            return i - 1 --one char *before* newline
+            return uidx_dif + i - 1 --one *before* newline
+        elseif utf8 and s:byte(i) >= 128 + 64 --[[0b11000000]] then
+            uidx_dif = uidx_dif - 1
         end
     end
-    return #s
+    return #s + uidx_dif
 end
 
 ---@param s string
 ---@param idx number
 ---@return number?
 ---@return number?
-function StrGetLineBounds(s, idx)
-    return StrGetLineStart(s, idx), StrGetLineEnd(s, idx)
+function StrGetLineBounds(s, idx, utf8)
+    return StrGetLineStart(s, idx, utf8), StrGetLineEnd(s, idx, utf8)
 end
 
 local Text = require "widgets/text"
