@@ -22,7 +22,7 @@ TODO:
   - Implement copying text to clipboard (NOT possible in current API)
 
 ]=]
-version = "1.0.4"
+version = "1.0.7"
 dst_compatible = true
 forge_compatible = false
 gorge_compatible = false
@@ -35,6 +35,9 @@ forumthread = ""
 api_version_dst = 10
 priority = 0
 mod_dependencies = {}
+
+forcemanifest = true
+
 server_filter_tags = {}
 configuration_options = {
 {
@@ -60,7 +63,29 @@ configuration_options = {
         { data = "complete", description = "Complete", hover = "Always try to complete prediction" },
         { data = "next", description = "Tab Through", hover = "Tab Through predictions (Ctrl + Tab to go backwards)." },
     },
-    default = ""
+    default = "spaces"
+},
+
+{
+    --GetModConfigData("wordset")
+    name = "wordset",
+    label = "Word Characters for Ctrl+Backspace",
+    options = {
+        { data = "%S", description = "All Non-Space Characters" },
+        { data = "%w_", description = "Letters, numbers, and underscore" },
+    },
+    default = "%S"
+},
+
+{
+    --GetModConfigData("autoopencloselog")
+    name = "autoopencloselog",
+    label = "Open/Close Log with Console",
+    options = {
+        { data = true, description = "Yes", hover = "vanilla" },
+        { data = false, description = "No" },
+    },
+    default = true
 },
 
 }

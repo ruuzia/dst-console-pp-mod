@@ -1,6 +1,7 @@
 local G = GLOBAL
 
 TheFrontEnd.consoletext:SetPosition(-100, 100, 0)
+--TheFrontEnd.consoletext.closeonrun = Config.CloseLogOnRun
 
 --@TODO: Implement scrolling console log
 ---might just do it from scratch

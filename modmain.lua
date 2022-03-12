@@ -2,7 +2,7 @@ require "debugcommands"
 
 local G = GLOBAL
 
-G.ConsolePPEnv = env
+function G.GetConsolePPEnv() return env end
 
 local TheInput, pcall, loadstring, Ents, Vector3, unpack, setmetatable =
 G.TheInput, G.pcall, G.loadstring, G.Ents, G.Vector3, G.unpack, G.setmetatable
@@ -13,21 +13,29 @@ local setfenv = G.setfenv
 local DEBUG = not modname:find("^workshop-")
 
 if DEBUG then
-    require "debugkeys"
-    G.CHEATS_ENABLED = true
+    --require "debugkeys"
+    --G.CHEATS_ENABLED = true
 end
 
 ------------------------------------------
 ------------------------------------------
 
 --for hot reload - debug mode only?
----@type {loc: table, name: string, old: function}[]
-Impurities = { __mode = "kv" }
+Impurities = {}
+
+Impurities.locations = setmetatable({}, { __mode = "kv" })
+Impurities.names = {}
+Impurities.originals = {}
+
+---@param loc table
+---@param name string
+---@param old any?
+---@return any
 function Impurities.new(loc, name, old)
-    if not DEBUG then return end
-    local data = {loc=loc, name=name, old=old}
-    table.insert(Impurities, data)
-    setmetatable(data, Impurities)
+    table.insert(Impurities.names, name)
+    Impurities.locations[#Impurities.names] = loc
+    Impurities.originals[#Impurities.names] = old or loc[name]
+    return loc[name]
 end
 
 ---@param loc table
@@ -47,22 +55,30 @@ function ModGfenv(fn, overrides)
     return setfenv(fn, setmetatable(overrides, { __index = G }))
 end
 
+local nlchar = ('\n'):byte()
+
 ---@param s string
 ---@param idx number
 ---@return number?
 function StrGetLineStart(s, idx)
-    if idx > #s or idx < 0 then return nil end
-
-    return (s:sub(1, idx):rfind_plain('\n') or 0) + 1
+    for i = idx, 1, -1 do
+        if s:byte(i) == nlchar then
+            return i + 1 --one char *after* newline
+        end
+    end
+    return 1
 end
 
 ---@param s string
 ---@param idx number
 ---@return number?
 function StrGetLineEnd(s, idx)
-    if idx > #s or idx < 0 then return nil end
-
-    return s:find('.\n', idx) or #s
+    for i = idx+1, #s do
+        if s:byte(i) == nlchar then
+            return i - 1 --one char *before* newline
+        end
+    end
+    return #s
 end
 
 ---@param s string
@@ -71,6 +87,30 @@ end
 ---@return number?
 function StrGetLineBounds(s, idx)
     return StrGetLineStart(s, idx), StrGetLineEnd(s, idx)
+end
+
+local Text = require "widgets/text"
+function TextBoxXPosToCol(textfont, textsize, xpos, line, substring)
+    substring = substring or string.utf8sub
+    local textbox = Text(textfont, textsize)
+    local prevwidth = 0
+    local index
+    for i = 1, #line do
+        textbox:SetString(substring(line, 1, i))
+        local width = textbox:GetRegionSize()
+        if width > xpos then
+            index = width - xpos < xpos - prevwidth and i or i - 1
+            break
+        end
+        prevwidth = width
+    end
+    textbox:Kill()
+    return index or #line
+end
+
+function TextBoxStringToPos(font, size, line)
+    if line == "" then return 0 end --GetRegionSize would return 2^127
+    return( Text(font, size, line):GetRegionSize() )
 end
 
 ---@param t table
@@ -97,36 +137,65 @@ function G.c_revealmap(reveal)
     if reveal == false then return G.MapHideAll() end
 
     local MapExplorer = G.ThePlayer.player_classified.MapExplorer
+    local RevealArea = MapExplorer.RevealArea
     local size = G.TheWorld.Map:GetSize() * 2
     for x = -size, size, 35 do
         for y = -size, size, 35 do
-            MapExplorer:RevealArea(x, 0, y)
+            RevealArea(MapExplorer, x, 0, y)
         end
     end
 end
 
-G.d_reloadconsolemod = DEBUG and function()
-    for _, v in ipairs(Impurities) do
-        if v.loc and v.old then
-            v.loc[v.name] = v.old
+local KnownModIndex = G.KnownModIndex
+local ModManager = G.ModManager
+G.d_reloadconsolemod = function()
+    if TheFrontEnd:GetActiveScreen().name == "ConsoleScreen" then
+        TheFrontEnd:PopScreen(TheFrontEnd:GetActiveScreen())
+    end
+    for i = 1, #Impurities.names do
+        if Impurities.locations[i] then
+            Impurities.locations[i][Impurities.names[i]] = Impurities.originals[i]
         end
     end
+    ModManager:FrontendUnloadMod(modname)
+
+    local prefab_name = "MOD_"..modname
+	TheSim:UnloadPrefabs{prefab_name}
+    TheSim:UnregisterPrefabs{prefab_name}
+	--G.ManifestManager:UnloadModManifest(string.sub(modname, 5))
+    KnownModIndex:UpdateSingleModInfo(modname)
+    KnownModIndex.savedata.known_mods[modname].modinfo = KnownModIndex:LoadModInfo(modname)
+    KnownModIndex:LoadModConfigurationOptions(modname)
+
+
     local isworldgen = CHARACTERLIST == nil
     local isfrontend = ReloadFrontEndAssets ~= nil
     local newenv = G.CreateEnvironment(modname, isworldgen, isfrontend)
-    newenv.modinfo = modinfo
+    newenv.modinfo = KnownModIndex:GetModInfo(modname)
+
+    --SetPostEnv
     newenv.TheFrontEnd = TheFrontEnd
     newenv.TheSim = TheSim
     newenv.Point = Point
     newenv.TheGlobalInstance = TheGlobalInstance
-    for i,v in ipairs(G.ModManager.mods) do
-        if v == env then
-            G.ModManager.mods[i] = newenv
+
+    --flag
+    newenv.Reload = true
+
+	if ModManager:InitializeModMain(modname, newenv, "modmain.lua") then
+        print "Successfully Initialized ModMain"
+        for i,v in ipairs(G.ModManager.mods) do
+            if v == env then
+                ModManager.mods[i] = newenv
+                break
+            end
         end
+
+        G.Prefabs[prefab_name].assets = newenv.Assets or {}
     end
-	G.ModManager:InitializeModMain(modname, newenv, "modmain.lua")
-    G.KnownModIndex:UpdateSingleModInfo(modname)
-end or nil
+	G.RegisterSinglePrefab(G.Prefabs[prefab_name])
+	TheSim:LoadPrefabs{prefab_name}
+end
 ------------------------------------------
 ------------------------------------------
 
@@ -137,19 +206,31 @@ Assets = {
 
 Config = {
     rtoggle = GetModConfigData("remotetoggle"),
-    tab = GetModConfigData("tab"),
+    tab     = GetModConfigData("tab"),
+    automanagelog = GetModConfigData("autoopencloselog"),
+    WordSet = GetModConfigData("wordset"),
 }
 
-Config.TabInsert = Config.tab == "default" or Config.tab == "spaces"
+Config.RemoteToggleKeys = {
+    [G.KEY_LCTRL] = Config.rtoggle == "ctrl",
+    [G.KEY_RCTRL] = Config.rtoggle == "ctrl",
+    [G.KEY_LALT]  = Config.rtoggle == "alt",
+    [G.KEY_RALT]  = Config.rtoggle == "alt",
+}
+
+Config.TabInsert   = Config.tab == "default" or Config.tab == "spaces"
 Config.TabComplete = Config.tab == "default" or Config.tab == "complete"
-Config.TabNext = Config.tab == "next"
+Config.TabNext     = Config.tab == "next"
+modassert(Config.TabComplete or Config.TabInsert or Config.TabNext, "unknown tab configuration data")
 
-local ignores = {["Server Unpaused"] = true, ["Server Autopaused"] = true, ["Server Paused"] = false}
+Config.Ignores = {["Server Unpaused"] = true, ["Server Autopaused"] = true, ["Server Paused"] = false}
 
+Config.CloseLogOnRun = Config.automanagelog
+Config.OpenLogWithConsole = Config.automanagelog
 
 ModGfenv(G.OnServerPauseDirty, {
     print = function(...)
-        if ignores[(...)] then return end
+        if Config.Ignores[(...)] then return end
         print(...)
     end;
 })
@@ -214,14 +295,28 @@ end
 ------------------------------------------------------------
 ------------------------------------------------------------
 
-modimport "consolescreen"
+modimport "consolemodder"
 modimport "textedit"
 
 AddGamePostInit(function ()
     modimport "consolelog"
 end)
-if TheFrontEnd then
+if Reload then
     modimport "consolelog"
 end
 
+if G.rawget(G, "GetConsoleLocalRemoteHistory") == nil then
+    local remotetogglehistory = {}
+    G.global "GetConsoleLocalRemoteHistory"
+    G.GetConsoleLocalRemoteHistory = function()
+        return remotetogglehistory
+    end
+end
+
+local ConsoleScreen = require("screens/consolescreen")
+local __ctor = Impurities.new(ConsoleScreen, "_ctor")
+ConsoleScreen._ctor = function(self, ...)
+    __ctor(self, ...)
+    ConsoleModder(self, G.GetConsoleHistory(), G.GetConsoleLocalRemoteHistory())
+end
 
