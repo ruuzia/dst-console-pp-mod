@@ -1,28 +1,13 @@
 ---@diagnostic disable:lowercase-global
 
-name = "Console++"
+name = "Console++ "
 author = "Friendly Grass"
 description = [=[
 This clientside mod implements many improvements to the DST command console.
-  - Full multiline capability
-    - Shift+Enter starts a new line
-    - Enter starts a new line if code is missing closing `]]`, `end`, etc
-  - More word completions
-  - Dynamic word completions (only in local)
-  - Remote/Local will not be toggled when using key combinations
-  - Disable Server Un/Paused messages (only in local)
-  - Print expression results (like Python REPL) (only in local)
-  - "=2 + 3" shorthand for "print(2 + 3)" (like Lua REPL)
-  - Ctrl+Backspace (all textedits)
-  - Tab (all textedits)
 
-TODO:
-  - Improvements console log
-  - Serverside version of this mod
-  - Implement copying text to clipboard (NOT possible in current API)
-
+󰀔 View Steam description for details 󰀔
 ]=]
-version = "1.0.7"
+version = "1.1.2"
 dst_compatible = true
 forge_compatible = false
 gorge_compatible = false
@@ -35,8 +20,6 @@ forumthread = ""
 api_version_dst = 10
 priority = 0
 mod_dependencies = {}
-
-forcemanifest = true
 
 server_filter_tags = {}
 configuration_options = {
@@ -63,7 +46,7 @@ configuration_options = {
         { data = "complete", description = "Complete", hover = "Always try to complete prediction" },
         { data = "next", description = "Tab Through", hover = "Tab Through predictions (Ctrl + Tab to go backwards)." },
     },
-    default = "spaces"
+    default = "default"
 },
 
 {
@@ -86,6 +69,21 @@ configuration_options = {
         { data = false, description = "No" },
     },
     default = true
+},
+
+{
+    --GetModConfigData("scrollspeed")
+    name = "scrollspeed",
+    label = "Console Log Scroll Speed",
+    options = {
+        { data = 1, description = "1", hover = "1 line per mouse wheel" },
+        { data = 2, description = "2", hover = "2 lines per mouse wheel" },
+        { data = 3, description = "3", hover = "3 lines per mouse wheel" },
+        { data = 4, description = "4", hover = "4 lines per mouse wheel" },
+        { data = 5, description = "5", hover = "5 lines per mouse wheel" },
+        { data = 6, description = "6", hover = "6 lines per mouse wheel" },
+    },
+    default = 2
 },
 
 }
