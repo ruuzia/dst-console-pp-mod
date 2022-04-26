@@ -30,7 +30,6 @@ ConsoleModder = Class(function (self, screen, console_history, localremote_histo
     self.remotetogglehistory     = assert(localremote_history)
     self.current                 = assert(self.console_edit:GetString())
     self.islogshown              = Config.OPENLOGWITHCONSOLE or TheFrontEnd.consoletext.shown
-    print(self.islogshown)
 
     --self.screen.CPPmod = self
     --self.console_edit.CPPmod = self
@@ -107,10 +106,11 @@ end
 function ConsoleModder:VerifyOnTextEntered()
     self.console_edit:SetEditing(true)
     if TheInput:IsKeyDown(G.KEY_SHIFT) or CodeMissingClosingStatement(self.console_edit:GetString()) then
-        self.console_edit:OnTextInput('\n')
+        self.console_edit.inst.TextEditWidget:OnTextInput('\n')
+        self:AdjustLabelHeight()
         return true
     elseif TheInput:IsKeyDown(G.KEY_CTRL) then
-        self.screen.inst:DoTaskInTime(0, DoRun, self)
+        self:Run()
         return true
     else
         self.console_edit:SetEditing(false)
@@ -229,9 +229,7 @@ function ConsoleModder:PostInit()
 end
 
 function ConsoleModder:VerifyValidateChar(c)
-    if c == '\n' or c == '\t' then
-        return true
-    end
+    return c == '\t'
 end
 
 function ConsoleModder:VerifyEditOnRawKey(key, down)
