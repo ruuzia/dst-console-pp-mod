@@ -20,6 +20,8 @@ local ConsoleScreen = require("screens/consolescreen")
 ------------------------------------------
 ------------------------------------------
 
+modimport "scripts/reload"
+
 ---@param loc table
 ---@param idx string
 ---@param wrapper fun(old: function, ...): any
