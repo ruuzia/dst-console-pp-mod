@@ -20,6 +20,17 @@ local ConsoleScreen = require("screens/consolescreen")
 ------------------------------------------
 ------------------------------------------
 
+---@param loc table
+---@param idx string
+---@param wrapper fun(old: function, ...): any
+function Hook(loc, idx, wrapper)
+  local origin = modassert(loc[idx], "no decorator function")
+  Impurities.new(loc, idx, origin)
+  loc[idx] = function(...)
+    return wrapper(origin, ...)
+  end
+end
+
 ---@param fn function
 ---@param overrides table<string, any>
 function ModFenv(fn, overrides)
