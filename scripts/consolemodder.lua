@@ -177,8 +177,9 @@ function ConsoleModder:PostInit()
         c_ = {},
         d_ = {},
         The = {},
-        Get = {},
-        Set = {},
+        --disable because these currently interfere with dynamic completions
+        --Get = {},
+        --Set = {},
     }
 
     for key in pairs(G) do
@@ -314,12 +315,13 @@ function ConsoleModder:ScreenOnRawKeyHandler(key, down)
             if self.screen.history_idx == nil then
                 self.current = str
             end
-            self.screen.history_idx = self.screen.history_idx
-                                  and math.max(1, self.screen.history_idx - 1)
-                                   or #self.history
-            self:UpdateGoalXPos()
+            do
+                local idx = self.screen.history_idx
+                self.screen.history_idx = idx and idx > 1 and idx - 1 or #self.history
+            end
+            -- self:UpdateGoalXPos()
             self.console_edit:SetString( self.history[ self.screen.history_idx ] )
-            self:SetToGoalXPos(StrGetLineStart(self.console_edit:GetString(), #self.console_edit:GetString()))
+            -- self:SetToGoalXPos(StrGetLineStart(self.console_edit:GetString(), #self.console_edit:GetString()))
 
             if self.remotetogglehistory[self.screen.history_idx] ~= nil then
                 self.screen:ToggleRemoteExecute(self.remotetogglehistory[self.screen.history_idx])
@@ -339,15 +341,15 @@ function ConsoleModder:ScreenOnRawKeyHandler(key, down)
             end
         elseif #self.history > 0 and self.screen.history_idx and self.arrowkey_set_to_history then
             if self.screen.history_idx == #self.history then
-                self:UpdateGoalXPos()
+                -- self:UpdateGoalXPos()
                 self.console_edit:SetString(self.current)
-                self:SetToGoalXPos(1)
+                -- self:SetToGoalXPos(1)
                 self.screen.history_idx = nil
             else
                 self.screen.history_idx = math.min(#self.history, self.screen.history_idx + 1)
-                self:UpdateGoalXPos()
+                -- self:UpdateGoalXPos()
                 self.console_edit:SetString(self.history[self.screen.history_idx])
-                self:SetToGoalXPos(1)
+                -- self:SetToGoalXPos(1)
 
                 if self.remotetogglehistory[self.screen.history_idx] ~= nil then
                     self.screen:ToggleRemoteExecute(self.remotetogglehistory[self.screen.history_idx])
@@ -377,7 +379,7 @@ function ConsoleModder:Run()
 
     G.SuUsedAdd("console_used")
 
-	if fnstr ~= "" --[=[and fnstr ~= self.history[#self.history]]=] then
+	if fnstr ~= "" and fnstr ~= self.history[#self.history] then
 		table.insert(self.history, fnstr)
         self.remotetogglehistory[#self.history] = self.screen.toggle_remote_execute
 	end
