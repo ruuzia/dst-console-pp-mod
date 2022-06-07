@@ -97,12 +97,6 @@ function ConsoleModder:InitiateHookers()
     end
 end
 
-local function DoRun(--[[inst]]_, self)
-    self.screen.runtask = nil
-    self:Run()
-    --self.screen:Close()
-end
-
 function ConsoleModder:VerifyOnTextEntered()
     self.console_edit:SetEditing(true)
     if TheInput:IsKeyDown(G.KEY_SHIFT) or CodeMissingClosingStatement(self.console_edit:GetString()) then
@@ -119,8 +113,9 @@ function ConsoleModder:VerifyOnTextEntered()
 end
 
 function ConsoleModder:Close()
-    TheFrontEnd.HideConsoleLog = G.getmetatable(TheFrontEnd).HideConsoleLog
-    TheFrontEnd.ShowConsoleLog = G.getmetatable(TheFrontEnd).ShowConsoleLog
+    -- use Class methods instead of overrides
+    TheFrontEnd.HideConsoleLog = nil
+    TheFrontEnd.ShowConsoleLog = nil
 
 	TheInput:EnableDebugToggle(true)
 	TheFrontEnd:PopScreen(self.screen)
