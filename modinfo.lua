@@ -1,3 +1,4 @@
+CLIENT_ONLY = true
 ---@diagnostic disable:lowercase-global
 
 name = "Console++ "
@@ -12,13 +13,14 @@ dst_compatible = true
 forge_compatible = false
 gorge_compatible = false
 dont_starve_compatible = false
-client_only_mod = true
-all_clients_require_mod = false
+client_only_mod = CLIENT_ONLY
+all_clients_require_mod = not CLIENT_ONLY
 icon_atlas = "modicon.xml"
 icon = "modicon.tex"
 forumthread = ""
 api_version_dst = 10
-priority = 0
+--client version runs first
+priority = CLIENT_ONLY and 1 or -1
 mod_dependencies = {}
 
 server_filter_tags = {}

@@ -185,18 +185,22 @@ function ConsoleModder:PostInit()
         end
     end
 
-    for _,v in ipairs(self.console_edit.prediction_widget.word_predictor.dictionaries) do
-        if v.delim == "c_" then
-            v.words = words["c_"]
-            break
+    local prediction_widget = self.console_edit.prediction_widget
+
+    if prediction_widget then
+        for _,v in ipairs(prediction_widget.word_predictor.dictionaries) do
+            if v.delim == "c_" then
+                v.words = words["c_"]
+                break
+            end
         end
     end
 
 
     self.console_edit:AddWordPredictionDictionary {words = words.d_ , delim = "d_" , num_chars = 0}
     self.console_edit:AddWordPredictionDictionary {words = words.The, delim = "The", num_chars = 0}
-    self.console_edit:AddWordPredictionDictionary {words = words.Get, delim = "Get", num_chars = 0}
-    self.console_edit:AddWordPredictionDictionary {words = words.Set, delim = "Set", num_chars = 0}
+    --self.console_edit:AddWordPredictionDictionary {words = words.Get, delim = "Get", num_chars = 0}
+    --self.console_edit:AddWordPredictionDictionary {words = words.Set, delim = "Set", num_chars = 0}
 
     --better implement myself
     --self.console_edit.allow_newline = true
@@ -205,7 +209,7 @@ function ConsoleModder:PostInit()
     --self.console_edit.validrawkeys[G.KEY_V] = true
 
     self.screen.edit_bg:SetTexture("images/textbox_long_thinborder.xml", "textbox_long_thinborder.tex" )
-	self.screen.root:SetPosition(100, baseypos, 0)
+	self.screen.root:SetPosition(0, baseypos, 0)
     self.screen.label_height = label_height
     self.screen.edit_width = edit_width
 	self.screen.edit_bg:ScaleToSize(edit_bg_padding + self.screen.edit_width, label_height )
@@ -229,6 +233,8 @@ function ConsoleModder:VerifyValidateChar(c)
 end
 
 function ConsoleModder:VerifyEditOnRawKey(key, down)
+    local ctrl_down = TheInput:IsKeyDown(G.KEY_CTRL)
+
     if key ~= G.KEY_DOWN and key ~= G.KEY_UP then
         self.goalxpos = nil
     end
@@ -239,7 +245,7 @@ function ConsoleModder:VerifyEditOnRawKey(key, down)
         self:DynamicComplete()
     end
 
-    if not Config.REMOTETOGGLEKEYS[key] and TheInput:IsKeyDown(G.KEY_CTRL) then
+    if not Config.REMOTETOGGLEKEYS[key] and ctrl_down then
         self.screen.ctrl_pasting = true
     end
 
@@ -259,6 +265,8 @@ function ConsoleModder:VerifyEditOnRawKey(key, down)
     end
 
     self.screen.inst:DoTaskInTime(0, function() self:AdjustLabelHeight() end)
+
+    return ctrl_down
 end
 
 function ConsoleModder:UpdateGoalXPos()
@@ -403,6 +411,7 @@ local rawglobal = G.setmetatable({}, {__index=function(_, k) return rawget(G, k)
 local simple_get_display_string = function(word) return word end
 
 function ConsoleModder:DynamicComplete()
+    if not self.console_edit.prediction_widget then return end
     local str = self.console_edit:GetString()
     local pos = self.console_edit.inst.TextEditWidget:GetEditCursorPos()
     local tnames = {}

@@ -60,10 +60,12 @@ Hook(TextEdit, "OnRawKey", function(_OnRawKey, self, key, down)
         elseif key == G.KEY_TAB then
             if Config.TABCOMPLETE and self.prediction_widget
                                   and self.prediction_widget.word_predictor.prediction then
+                print("TABCOMPLETE")
                 self:ApplyWordPrediction(self.prediction_widget.active_prediction_btn)
             elseif Config.TABINSERT and self.nextTextEditWidget == nil then
                 for _ = 1, 4 do
                     --\t just inserts a space anyways
+                    print("TABINSERT")
                     self:OnTextInput(' ')
                 end
             elseif Config.TABNEXT and self.prediction_widget then

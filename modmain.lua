@@ -7,15 +7,23 @@ G.TheInput, G.pcall, G.loadstring, G.Ents, G.Vector3, G.unpack, G.setmetatable
 local setfenv = G.setfenv
 
 --local DEBUG = not modname:find("^workshop-")
+local onserver = G.TheNet:GetIsServer()
 
 G.global "ConsolePP"
 ConsolePP = G.ConsolePP or {}
+
+local client_only_version_exists = ConsolePP.env and ConsolePP.env.modinfo.client_only_mod
+if client_only_version_exists and modinfo.all_clients_require_mod and not onserver then
+    return
+end
+
 ConsolePP.save = ConsolePP.save or {}
 ConsolePP.env = env
 G.ConsolePP = ConsolePP
 
 
 local ConsoleScreen = require("screens/consolescreen")
+
 
 ------------------------------------------
 ------------------------------------------
@@ -90,25 +98,27 @@ function StrGetLineBounds(s, idx, utf8)
     return StrGetLineStart(s, idx, utf8), StrGetLineEnd(s, idx, utf8)
 end
 
-AddGamePostInit(function()
-    if ConsolePP.save.HackText then
-        print("Removing old hacktext")
-        ConsolePP.save.HackText:Kill()
-    end
-    local hacktext = (require "widgets/widget")()
-    ConsolePP.save.HackText = hacktext
+if not onserver then
+    AddGamePostInit(function()
+        if ConsolePP.save.HackText then
+            print("Removing old hacktext")
+            ConsolePP.save.HackText:Kill()
+        end
+        local hacktext = (require "widgets/widget")()
+        ConsolePP.save.HackText = hacktext
 
-    hacktext.inst.entity:AddTextWidget()
-    hacktext:Hide()
+        hacktext.inst.entity:AddTextWidget()
+        hacktext:Hide()
 
 
-    function CalcTextRegionSize(str, font, size)
-        hacktext.inst.TextWidget:SetSize(size * (G.LOC and G.LOC.GetTextScale() or 1))
-        hacktext.inst.TextWidget:SetFont(font)
-        hacktext.inst.TextWidget:SetString(str)
-        return hacktext.inst.TextWidget:GetRegionSize()
-    end
-end)
+        function CalcTextRegionSize(str, font, size)
+            hacktext.inst.TextWidget:SetSize(size * (G.LOC and G.LOC.GetTextScale() or 1))
+            hacktext.inst.TextWidget:SetFont(font)
+            hacktext.inst.TextWidget:SetString(str)
+            return hacktext.inst.TextWidget:GetRegionSize()
+        end
+    end)
+end
 
 function TextBoxXPosToCol(textfont, textsize, xpos, line, substring)
     substring = substring or string.utf8sub
@@ -249,4 +259,3 @@ ConsoleScreen._ctor = function(self, ...)
     __ctor(self, ...)
     ConsoleModder(self, G.GetConsoleHistory(), G.GetConsoleLocalRemoteHistory())
 end
-
