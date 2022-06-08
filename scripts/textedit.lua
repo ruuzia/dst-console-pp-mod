@@ -8,23 +8,22 @@ function ForceFocusTextEditCursor(self)
     self.inst.TextEditWidget:OnKeyDown(G.KEY_LCTRL, false)
 end
 
+local WordPredictionWidget = require "widgets/wordpredictionwidget"
+
+Hook(WordPredictionWidget, "_ctor", function(__ctor, self, ...)
+    __ctor(self, ...)
+    self.tab_complete = false -- I handle tab complete
+    -- either enter_complete or tab_complete must be true for WordPredictionWidget:IsMouseOnly
+    self.enter_complete = true
+end)
+
 -- Changes for ALL textedits - not just console edit
 -- First OnRawKey to run
 Hook(TextEdit, "OnRawKey", function(_OnRawKey, self, key, down)
     local ctrl_down = TheInput:IsKeyDown(G.KEY_LCTRL) or TheInput:IsKeyDown(G.KEY_RCTRL)
-    if down then
-        if (key == G.KEY_BACKSPACE or key == G.KEY_DELETE) and ctrl_down then
-            local str = self:GetString()
-            local pos = self.inst.TextEditWidget:GetEditCursorPos()
-            if pos > 0 then
-                local ptrn = "["..Config.WORDSET.."]*[^"..Config.WORDSET.."]*$"
-                local i = str:sub(1, pos-1):find(ptrn)
-                self:SetString(str:sub(1, i-1) .. str:sub(pos + 1))
-                self.inst.TextEditWidget:SetEditCursorPos(i-1)
-            end
-            return true
 
-        elseif (key == G.KEY_BACKSPACE or key == G.KEY_DELETE) and TheInput:IsKeyDown(G.KEY_LSUPER) then
+    if down then
+        if (key == G.KEY_BACKSPACE or key == G.KEY_DELETE) and TheInput:IsKeyDown(G.KEY_LSUPER) then
             local str = self:GetString()
             local pos = self.inst.TextEditWidget:GetEditCursorPos()
             local i = StrGetLineStart(str, pos)
@@ -32,41 +31,15 @@ Hook(TextEdit, "OnRawKey", function(_OnRawKey, self, key, down)
             self.inst.TextEditWidget:SetEditCursorPos(i-1)
             return true
 
-        elseif key == G.KEY_LEFT and ctrl_down then
-            ---[[
-            local str = self:GetString()
-            local pos = self.inst.TextEditWidget:GetEditCursorPos()
-            if pos == 0 then return false end
-            local ptrn = "["..Config.WORDSET.."]*[^"..Config.WORDSET.."]*$"
-            local i = str:sub(1, pos-1):find(ptrn)
-            self.inst.TextEditWidget:SetEditCursorPos(i-1)
-            ForceFocusTextEditCursor(self)
-            return true
-            --]]
-
-        elseif key == G.KEY_RIGHT and ctrl_down then
-            local str = self:GetString()
-            local pos = self.inst.TextEditWidget:GetEditCursorPos()
-            --if pos == #str then return false end
-            ---[[
-            local ptrn = "^[^"..Config.WORDSET.."]*["..Config.WORDSET.."]*[^"..Config.WORDSET.."]*"
-            local _, i = str:find(ptrn, pos+1)
-            if not i then return false end
-            --]]
-            self.inst.TextEditWidget:SetEditCursorPos(i)
-            ForceFocusTextEditCursor(self)
-            return true
-
         elseif key == G.KEY_TAB then
             if Config.TABCOMPLETE and self.prediction_widget
-                                  and self.prediction_widget.word_predictor.prediction then
-                print("TABCOMPLETE")
+                                  and self.prediction_widget.active_prediction_btn
+            then
                 self:ApplyWordPrediction(self.prediction_widget.active_prediction_btn)
             elseif Config.TABINSERT and self.nextTextEditWidget == nil then
                 for _ = 1, 4 do
                     --\t just inserts a space anyways
-                    print("TABINSERT")
-                    self:OnTextInput(' ')
+                    self.inst.TextEditWidget:OnTextInput(' ')
                 end
             elseif Config.TABNEXT and self.prediction_widget then
                 local active_btn_id = self.prediction_widget.active_prediction_btn
@@ -85,7 +58,55 @@ Hook(TextEdit, "OnRawKey", function(_OnRawKey, self, key, down)
     return _OnRawKey(self, key, down)
 end)
 
-local on_control = Impurities.new(TextEdit, "OnControl")
+do
+    local _OnControl = Impurities.new(TextEdit, "OnControl")
+    function TextEdit:OnControl(control, down)
+        local ctrl_down = TheInput:IsKeyDown(G.KEY_LCTRL) or TheInput:IsKeyDown(G.KEY_RCTRL)
+
+        if down then
+            if (control == G.CONTROL_TOGGLE_DEBUGRENDER) and ctrl_down then
+                local str = self:GetString()
+                local pos = self.inst.TextEditWidget:GetEditCursorPos()
+                if pos > 0 then
+                    local ptrn = "["..Config.WORDSET.."]*[^"..Config.WORDSET.."]*$"
+                    local i = str:sub(1, pos-1):find(ptrn)
+                    self:SetString(str:sub(1, i-1) .. str:sub(pos + 1))
+                    self.inst.TextEditWidget:SetEditCursorPos(i-1)
+                end
+                return true
+
+            elseif control == G.CONTROL_FOCUS_LEFT and ctrl_down then
+                ---[[
+                local str = self:GetString()
+                local pos = self.inst.TextEditWidget:GetEditCursorPos()
+                if pos == 0 then return false end
+                local ptrn = "["..Config.WORDSET.."]*[^"..Config.WORDSET.."]*$"
+                local i = str:sub(1, pos-1):find(ptrn)
+                self.inst.TextEditWidget:SetEditCursorPos(i-1)
+                ForceFocusTextEditCursor(self)
+                return true
+                --]]
+
+            elseif control == G.CONTROL_FOCUS_RIGHT and ctrl_down then
+                local str = self:GetString()
+                local pos = self.inst.TextEditWidget:GetEditCursorPos()
+                --if pos == #str then return false end
+                ---[[
+                local ptrn = "^[^"..Config.WORDSET.."]*["..Config.WORDSET.."]*[^"..Config.WORDSET.."]*"
+                local _, i = str:find(ptrn, pos+1)
+                if not i then return false end
+                --]]
+                self.inst.TextEditWidget:SetEditCursorPos(i)
+                ForceFocusTextEditCursor(self)
+                return true
+            end
+        end
+        return _OnControl(self, control, down)
+    end
+end
+
+local on_control = TextEdit.OnControl
+
 local function mod_on_control(self, control, down)
     local ret = on_control(self, control, down)
     if not down and control == G.CONTROL_ACCEPT then

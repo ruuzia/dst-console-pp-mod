@@ -64,10 +64,10 @@ function ConsoleModder:InitiateHookers()
         return self:VerifyEditOnRawKey(...) or _OnRawKey(s, ...)
     end
 
-    local _ValidateChar = self.console_edit.ValidateChar
-    self.console_edit.ValidateChar = function(s, ...)
-        return self:VerifyValidateChar(...) or _ValidateChar(s, ...)
-    end
+    --local _ValidateChar = self.console_edit.ValidateChar
+    --self.console_edit.ValidateChar = function(s, ...)
+    --    return self:VerifyValidateChar(...) or _ValidateChar(s, ...)
+    --end
 
     AssertDefinitionSource(self.screen, "OnRawKeyHandler", "scripts/screens/consolescreen.lua")
     self.screen.OnRawKeyHandler = function(_, ...)
