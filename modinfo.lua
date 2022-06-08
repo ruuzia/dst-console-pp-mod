@@ -8,7 +8,7 @@ This clientside mod implements many improvements to the DST command console.
 
 󰀔 View Steam description for details 󰀔
 ]=]
-version = "1.1.2"
+version = "1.3"
 dst_compatible = true
 forge_compatible = false
 gorge_compatible = false
