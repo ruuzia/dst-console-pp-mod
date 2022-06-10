@@ -52,7 +52,7 @@ function ConsoleModder:InitiateHookers()
 
     local _OnRawKey = self.console_edit.OnRawKey
     self.console_edit.OnRawKey = function(s, ...)
-        return self:VerifyEditOnRawKey(...) or _OnRawKey(s, ...)
+        return self:VerifyEditOnRawKey(...) and _OnRawKey(s, ...)
     end
 
     --local _ValidateChar = self.console_edit.ValidateChar
@@ -330,7 +330,7 @@ function ConsoleModder:VerifyEditOnRawKey(key, down)
 
     self.screen.inst:DoTaskInTime(0, function() self:AdjustLabelHeight() end)
 
-    return ctrl_down
+    return true
 end
 
 function ConsoleModder:UpdateGoalXPos()
