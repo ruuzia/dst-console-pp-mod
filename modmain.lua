@@ -1,5 +1,7 @@
 require "debugcommands"
 
+modimport "scripts/env"
+
 local G = GLOBAL
 
 local TheInput, pcall, loadstring, Ents, Vector3, unpack, setmetatable =
@@ -18,9 +20,9 @@ if client_only_version_exists and modinfo.all_clients_require_mod and not onserv
 end
 
 ConsolePP.save = ConsolePP.save or {}
+ConsolePP.weak = setmetatable({}, {__mode = "v"})
 ConsolePP.env = env
 G.ConsolePP = ConsolePP
-
 
 local ConsoleScreen = require("screens/consolescreen")
 
@@ -192,6 +194,7 @@ ModFenv(G.OnServerPauseDirty, {
 
 ---@param lua string
 function CodeMissingClosingStatement(lua)
+    -- lmao why do I do this with regex
     local encoded = lua:gsub("\\.", "")              --remove escapes
                        :gsub("%-%-(%[=*%[)", "%1")   --remove leading `--` in multiline comment
                        :gsub("%[(=*)%[.-%]%1%]", "") --remove multiline strings
@@ -249,7 +252,9 @@ end
 ------------------------------------------------------------
 ------------------------------------------------------------
 
-modimport "scripts/deque"
+modimport "scripts/logs"
+Logs = LogHistory()
+
 modimport "scripts/consolemodder"
 modimport "scripts/textedit"
 modimport "scripts/consolelog"

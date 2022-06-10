@@ -12,16 +12,6 @@ local baseypos = 75
 
 local Widget = require "widgets/widget"
 
----@class ConsoleModder
----@field screen table
----@field console_edit table
----@field arrowkey_set_to_history boolean
----@field history table
----@field remotetogglehistory table
----@field current string
----@field goalxpos number|nil
----@field islogshown boolean
----@param self ConsoleModder
 ConsoleModder = Class(function (self, screen, console_history, localremote_history)
     self.screen                  = assert(screen)
     self.console_edit            = assert(screen.console_edit)
@@ -31,8 +21,9 @@ ConsoleModder = Class(function (self, screen, console_history, localremote_histo
     self.current                 = assert(self.console_edit:GetString())
     self.islogshown              = Config.OPENLOGWITHCONSOLE or TheFrontEnd.consoletext.shown
 
-    --self.screen.CPPmod = self
-    --self.console_edit.CPPmod = self
+    self.buttons = {}
+
+    ConsolePP.weak.CM = self -- weak reference for in game debugging
     self:InitiateHookers()
     self:PostInit()
 end)
@@ -113,7 +104,7 @@ function ConsoleModder:VerifyOnTextEntered()
 end
 
 function ConsoleModder:Close()
-    -- use Class methods instead of overrides
+    -- use Class methods instead of overrides (assumes definitions are in FrontEnd class!)
     TheFrontEnd.HideConsoleLog = nil
     TheFrontEnd.ShowConsoleLog = nil
 
@@ -135,7 +126,17 @@ function ConsoleModder:BuildStaticRoot()
     staticroot = staticroot:AddChild(Widget(""))
     staticroot:SetPosition(0,100,0)
 
-    self.screen.staticroot = staticroot
+    self.staticroot = staticroot
+end
+
+local History = require "history"
+
+local function getshard()
+    if G.TheWorld:HasTag "forest" then
+        return "Master"
+    elseif G.TheWorld:HasTag "cave" then
+        return "Caves"
+    end
 end
 
 ---[[
@@ -144,28 +145,68 @@ function ConsoleModder:PostOnBecomeActive()
     if remote ~= nil then
         self.screen:ToggleRemoteExecute(remote)
     end
-    TheFrontEnd:HideConsoleLog()
-    --TheFrontEnd:ShowConsoleLog()
-    self:BuildStaticRoot()
-
-    self.scrollable_log = self.screen.staticroot:AddChild(ScrollableConsoleLog(self.history))
-    --self.scrollable_log:SetVAnchor(G.ANCHOR_BOTTOM)
-    self.scrollable_log:SetPosition(-550, -200)
-
+    TheFrontEnd.consoletext:Hide()
     function TheFrontEnd.ShowConsoleLog(frontend)
         self.islogshown = true
         frontend.consoletext.shown = self.islogshown
         self.scrollable_log:Show()
+        for _,btn in ipairs(self.buttons) do btn:Show() end
     end
     function TheFrontEnd.HideConsoleLog(frontend)
         self.islogshown = false
         frontend.consoletext.shown = false
         self.scrollable_log:Hide()
+        for _,btn in ipairs(self.buttons) do btn:Hide() end
     end
 
     if self.islogshown then TheFrontEnd:ShowConsoleLog() else TheFrontEnd:HideConsoleLog() end
+
+    if self.screen.toggle_remote_execute then
+        self.buttons[getshard()].onclick()
+    end
+
 end
+
 --]]
+
+local Menu = require "widgets/menu"
+local TEMPLATES = require "widgets/redux/templates"
+
+local function make_log_switch_buttons(self)
+    local x = -490
+    local y = 210
+    local sz = {100, 50}
+    do
+        local btn = self.staticroot:AddChild(TEMPLATES.StandardButton(function ()
+            self.scrollable_log.history = Logs.client
+            self.scrollable_log:RefreshWidgets(true)
+            self.scrollable_log:SetTextColour(1, 1, 1, 1)
+
+            self.console_edit:SetEditing(true)
+            return true
+        end, "Client", sz))
+        table.insert(self.buttons, btn)
+        btn:SetPosition(x, y)
+    end
+
+    local colours = {G.WEBCOLOURS.TEAL, G.WEBCOLOURS.ORANGE}
+    for i, shard in ipairs {"Master", "Caves"} do
+        local btn = self.staticroot:AddChild(TEMPLATES.StandardButton(function ()
+            Logs:UpdateClusterLog(shard)
+            self.scrollable_log.history = Logs.cluster[shard]
+            self.scrollable_log:SetTextColour(unpack(colours[i]))
+            self.scrollable_log:RefreshWidgets(true)
+
+            self.console_edit:SetEditing(true)
+            return true
+        end, shard, sz))
+        btn:SetPosition(x + i * 100, y)
+        table.insert(self.buttons, btn)
+        self.buttons[shard] = btn
+        btn:SetTextColour(colours[i])
+        btn:SetTextFocusColour(colours[i])
+    end
+end
 
 function ConsoleModder:PostInit()
     local words = {
@@ -196,6 +237,29 @@ function ConsoleModder:PostInit()
         end
     end
 
+
+    TheFrontEnd:HideConsoleLog()
+    --TheFrontEnd:ShowConsoleLog()
+    self:BuildStaticRoot()
+
+    self.scrollable_log = self.staticroot:AddChild(ScrollableConsoleLog(Logs.client))
+    --self.scrollable_log:SetVAnchor(G.ANCHOR_BOTTOM)
+    self.scrollable_log:SetPosition(-550, -200)
+    self.scrollable_log:RefreshOnClientPrint()
+
+    make_log_switch_buttons(self)
+
+    self.console_edit.OnStopForceEdit = function ()
+        for i = 1, #self.buttons do
+            if self.buttons[i].focus then
+                --self.console_edit:SetEditing(true)
+                return
+            end
+        end
+        self:Close()
+    end
+
+    self.scrollable_log:SetPosition(-550, -200)
 
     self.console_edit:AddWordPredictionDictionary {words = words.d_ , delim = "d_" , num_chars = 0}
     self.console_edit:AddWordPredictionDictionary {words = words.The, delim = "The", num_chars = 0}
@@ -393,10 +457,15 @@ function ConsoleModder:Run()
             fnstr = ("print(%s)"):format(fnstr:sub(2))
         end
 		G.TheNet:SendRemoteExecute(fnstr, x, z)
+        self.screen.inst:DoTaskInTime(0, function ()
+            Logs:UpdateClusterLog(getshard())
+            --self.buttons[getshard()].onclick()
+            self.scrollable_log:RefreshWidgets(true)
+        end)
 	else
 		G.ExecuteConsoleCommand(fnstr)
+        self.scrollable_log:RefreshWidgets()
 	end
-    self.scrollable_log:RefreshWidgets()
 end
 
 local indexing_regexp = '()'       --> start index
