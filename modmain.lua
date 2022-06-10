@@ -8,7 +8,10 @@ local TheInput, pcall, loadstring, Ents, Vector3, unpack, setmetatable =
 G.TheInput, G.pcall, G.loadstring, G.Ents, G.Vector3, G.unpack, G.setmetatable
 local setfenv = G.setfenv
 
---local DEBUG = not modname:find("^workshop-")
+DEBUG = not modname:find("^workshop-")
+
+-- dprint does nothing on workshop release version
+env.dprint = DEBUG and print or function() end
 
 G.global "ConsolePP"
 ConsolePP = G.ConsolePP or {}

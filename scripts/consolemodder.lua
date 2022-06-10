@@ -441,7 +441,6 @@ function ConsoleModder:VerifyOnControl(control, down)
 end
 
 function ConsoleModder:Run()
-
 	local fnstr = self.console_edit:GetString()
 
     G.SuUsedAdd("console_used")
