@@ -303,7 +303,7 @@ function ConsoleModder:VerifyEditOnRawKey(key, down)
         self.goalxpos = nil
     end
     self.screen.inst:DoTaskInTime(0, function() self:AdjustLabelHeight() end)
-    if not down then return false end
+    if not down then return true end
 
     if key == G.KEY_PERIOD or (key == G.KEY_SEMICOLON and TheInput:IsKeyDown(G.KEY_SHIFT)) then
         self:DynamicComplete()
