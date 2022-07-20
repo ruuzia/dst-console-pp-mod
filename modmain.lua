@@ -19,7 +19,7 @@ ConsolePP = G.ConsolePP or {}
 local client_only_version_exists = ConsolePP.env and ConsolePP.env.modinfo.client_only_mod
 
 ConsolePP.save = ConsolePP.save or {}
-ConsolePP.weak = setmetatable({}, {__mode = "v"})
+ConsolePP.tmp = setmetatable({}, {__mode = "v"})
 ConsolePP.env = env
 G.ConsolePP = ConsolePP
 
@@ -254,6 +254,7 @@ Logs = LogHistory()
 modimport "scripts/consolemodder"
 modimport "scripts/textedit"
 modimport "scripts/consolelog"
+modimport "scripts/wordpredictionwidget"
 
 local __ctor = Impurities.new(ConsoleScreen, "_ctor")
 ConsoleScreen._ctor = function(self, ...)

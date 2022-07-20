@@ -23,7 +23,7 @@ ConsoleModder = Class(function (self, screen, console_history, localremote_histo
 
     self.buttons = {}
 
-    ConsolePP.weak.CM = self -- weak reference for in game debugging
+    ConsolePP.tmp.CM = self -- weak reference for in game debugging
     self:InitiateHookers()
     self:PostInit()
 end)
@@ -40,8 +40,7 @@ function ConsoleModder:AdjustLabelHeight()
 end
 
 function ConsoleModder:InitiateHookers()
-    --I don't like that all these closures are recreated each time the screen is instantiated
-    --but I do like that it doesn't modify the global environment so automatically works with hot reload
+    --doesn't modify the global environment so automatically works with hot reload
 
     local _OnBecomeActive = self.screen.OnBecomeActive
     self.screen.OnBecomeActive = function(s, ...)
