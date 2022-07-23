@@ -4,7 +4,9 @@ unpack = G.unpack
 coroutine = G.coroutine
 tonumber = G.tonumber
 next = G.next
+rawget = G.rawget
 
+-- pasted all keys
 KEY_TAB = 9
 KEY_KP_0			= 256
 KEY_KP_1			= 257

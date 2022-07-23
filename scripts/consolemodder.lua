@@ -54,10 +54,10 @@ function ConsoleModder:InitiateHookers()
         return self:VerifyEditOnRawKey(...) and _OnRawKey(s, ...)
     end
 
-    --local _ValidateChar = self.console_edit.ValidateChar
-    --self.console_edit.ValidateChar = function(s, ...)
-    --    return self:VerifyValidateChar(...) or _ValidateChar(s, ...)
-    --end
+    local _ValidateChar = self.console_edit.ValidateChar
+    self.console_edit.ValidateChar = function(s, ...)
+        return self:VerifyValidateChar(...) or _ValidateChar(s, ...)
+    end
 
     AssertDefinitionSource(self.screen, "OnRawKeyHandler", "scripts/screens/consolescreen.lua")
     self.screen.OnRawKeyHandler = function(_, ...)
@@ -292,7 +292,7 @@ function ConsoleModder:PostInit()
 end
 
 function ConsoleModder:VerifyValidateChar(c)
-    return c == '\t'
+    return c == '\n'
 end
 
 function ConsoleModder:VerifyEditOnRawKey(key, down)
@@ -446,7 +446,11 @@ function ConsoleModder:Run()
 
 	if fnstr ~= "" and fnstr ~= self.history[#self.history] then
 		table.insert(self.history, fnstr)
-        self.remotetogglehistory[#self.history] = self.screen.toggle_remote_execute
+        local toggle = self.screen.toggle_remote_execute
+        self.remotetogglehistory[#self.history] = toggle
+        if rawget(G, ConsoleScreenSettings) then
+            G.ConsoleScreenSettings:AddLastExecutedCommand(fnstr, toggle)
+        end
 	end
 
 	if self.screen.toggle_remote_execute then
