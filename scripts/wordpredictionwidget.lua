@@ -75,7 +75,14 @@ local function build_prediction_buttons(self, display_start)
 end
 
 local function update_arrow_texture(self)
-    --self.left_arrow:SetTexture
+    if not self.word_predictor.prediction then return end
+    local nummatches = #self.word_predictor.prediction.matches
+    local numbuttons = #self.prediction_btns
+    local base = self._cpm_base_index
+
+    if nummatches > base + numbuttons then self.right_arrow:Enable() else self.right_arrow:Disable() end
+
+    if base > 0 then self.left_arrow:Enable() else self.left_arrow:Disable() end
 end
 
 local function scroll_left(self)
@@ -83,6 +90,7 @@ local function scroll_left(self)
     build_prediction_buttons(self, self._cpm_base_index)
     self.active_prediction_btn = #self.prediction_btns
     self.prediction_btns[self.active_prediction_btn]:Select()
+    update_arrow_texture(self)
 end
 
 local function scroll_right(self)
@@ -90,11 +98,17 @@ local function scroll_right(self)
     build_prediction_buttons(self, self._cpm_base_index)
     self.active_prediction_btn = 1
     self.prediction_btns[self.active_prediction_btn]:Select()
+    update_arrow_texture(self)
 end
 
 Hook(WordPredictionWidget, "RefreshPredictions", function (orig, self)
     orig(self)
-    self.right_arrow:SetPosition((self.backing:GetSize()), 0)
+    self._cpm_base_index = 0
+    if self.word_predictor.prediction then
+        self.active_prediction_btn = not self:IsMouseOnly() and 1 or nil
+        self.right_arrow:SetPosition((self.backing:GetSize()), 0)
+        update_arrow_texture(self)
+    end
 end)
 
 
@@ -104,15 +118,13 @@ Hook(WordPredictionWidget, "_ctor", function (orig, self, ...)
 
     local root = next(self.children)
 
-	local left_arrow = root:AddChild(ImageButton("images/global_redux.xml", "arrow2_left_down.tex"))
+	local left_arrow = root:AddChild(ImageButton("images/global_redux.xml", "arrow2_left.tex", "arrow2_left_over.tex", "arrow_left_disabled.tex", "arrow2_left_down.tex", nil, {0.5,0.5}, {0,0}))
 	left_arrow:SetOnClick(function() scroll_left(self) end)
-	left_arrow:SetScale(.5)
 	left_arrow:SetPosition(-15, 0)
     self.left_arrow = left_arrow
 
-	local right_arrow = root:AddChild(ImageButton("images/global_redux.xml", "arrow2_right_down.tex"))
+	local right_arrow = root:AddChild(ImageButton("images/global_redux.xml", "arrow2_right.tex", "arrow2_right_over.tex", "arrow_right_disabled.tex", "arrow2_right_down.tex", nil, {0.5,0.5}, {0,0}))
 	right_arrow:SetOnClick(function() scroll_right(self) end)
-	right_arrow:SetScale(.5)
 	right_arrow:SetPosition(0, 0) -- set in button generation
     self.right_arrow = right_arrow
 end)
@@ -145,7 +157,7 @@ function WordPredictionWidget:OnRawKey(key, down)
                 if self.active_prediction_btn < #self.prediction_btns then
                     self.prediction_btns[self.active_prediction_btn + 1]:Select()
                 --- new ---
-                elseif #self.word_predictor.prediction.matches > self.active_prediction_btn + self._cpm_base_index then
+                elseif #self.word_predictor.prediction.matches > #self.prediction_btns + self._cpm_base_index then
                     scroll_right(self)
                 end
                 -----------
