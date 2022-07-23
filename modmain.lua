@@ -25,7 +25,6 @@ G.ConsolePP = ConsolePP
 
 local ConsoleScreen = require("screens/consolescreen")
 
-
 ------------------------------------------
 ------------------------------------------
 
