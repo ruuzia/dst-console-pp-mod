@@ -12,6 +12,7 @@ local baseypos = 75
 
 local Widget = require "widgets/widget"
 
+
 -- In beta
 G.global "ConsoleScreenSettings"
 
@@ -182,6 +183,9 @@ local Menu = require "widgets/menu"
 local TEMPLATES = require "widgets/redux/templates"
 
 local function make_log_switch_buttons(self)
+    -- If no dedicated servers, don't make buttons
+    if not G.TheNet:GetIsClient() and not G.TheNet:GetIsHosting() then return end
+
     local x = -490
     local y = 210
     local sz = {100, 50}
@@ -475,7 +479,7 @@ function ConsoleModder:Run()
 
         self.screen.inst:DoTaskInTime(0, function ()
             local shard = getshard()
-            if shard then
+            if shard and self.buttons[shard] then
                 self.buttons[shard].onclick()
             end
             --self.scrollable_log:RefreshWidgets(true)
@@ -483,7 +487,8 @@ function ConsoleModder:Run()
 	else
 		G.ExecuteConsoleCommand(fnstr)
         --self.scrollable_log:RefreshWidgets()
-        self.buttons["Client"].onclick()
+        local btn = self.buttons["Client"]
+        if btn then btn:onclick() end
 	end
 end
 
