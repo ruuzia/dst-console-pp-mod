@@ -85,12 +85,14 @@ function LogHistory:UpdateClusterLog(shard)
         return
     end
     if cluster_num > G.CLOUD_SAVES_SAVE_OFFSET then
-        log:Erase()
         log:Push("(Can not read from cloud save)")
     end
-    TheSim:GetPersistentString("../Cluster_"..cluster_num.."/"..shard.."/server_log.txt", function (succ, contents)
-        if not succ then return end
-        log:Erase()
+    local path = "../Cluster_"..cluster_num.."/"..shard.."/server_log.txt"
+    TheSim:GetPersistentString(path, function (succ, contents)
+        if not succ then
+            log:Push("(Failed to load "..path..")")
+            return
+        end
         for line in contents:gmatch "[^\n]+" do
             log:Push(line)
         end
