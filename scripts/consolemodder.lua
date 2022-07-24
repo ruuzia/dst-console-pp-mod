@@ -12,6 +12,9 @@ local baseypos = 75
 
 local Widget = require "widgets/widget"
 
+-- In beta
+G.global "ConsoleScreenSettings"
+
 ConsoleModder = Class(function (self, screen, console_history, localremote_history)
     self.screen                  = assert(screen)
     self.console_edit            = assert(screen.console_edit)
@@ -89,14 +92,18 @@ end
 
 function ConsoleModder:VerifyOnTextEntered()
     self.console_edit:SetEditing(true)
-    if TheInput:IsKeyDown(G.KEY_SHIFT) or CodeMissingClosingStatement(self.console_edit:GetString()) then
+    -- Force run on CTRL+Enter
+    if TheInput:IsKeyDown(G.KEY_CTRL) then
+        self:Run()
+
+        return true
+    -- Create newline on Shift+Enter or in unfinished block
+    elseif TheInput:IsKeyDown(G.KEY_SHIFT) or CodeMissingClosingStatement(self.console_edit:GetString()) then
         self.console_edit.inst.TextEditWidget:OnTextInput('\n')
         self:AdjustLabelHeight()
         return true
-    elseif TheInput:IsKeyDown(G.KEY_CTRL) then
-        self:Run()
-        return true
     else
+        -- Close console!
         self.console_edit:SetEditing(false)
         return false
     end
@@ -161,7 +168,10 @@ function ConsoleModder:PostOnBecomeActive()
     if self.islogshown then TheFrontEnd:ShowConsoleLog() else TheFrontEnd:HideConsoleLog() end
 
     if self.screen.toggle_remote_execute then
-        self.buttons[getshard()].onclick()
+        local shard = getshard()
+        if shard then
+            self.buttons[shard].onclick()
+        end
     end
 
 end
@@ -185,6 +195,7 @@ local function make_log_switch_buttons(self)
             return true
         end, "Client", sz))
         table.insert(self.buttons, btn)
+        self.buttons["Client"] = btn
         btn:SetPosition(x, y)
     end
 
@@ -292,7 +303,8 @@ function ConsoleModder:PostInit()
 end
 
 function ConsoleModder:VerifyValidateChar(c)
-    return c == '\n'
+    -- If Ctrl+Enter, then we don't want to input a newline!
+    return c == '\n' and not TheInput:IsKeyDown(G.KEY_CTRL)
 end
 
 function ConsoleModder:VerifyEditOnRawKey(key, down)
@@ -448,8 +460,9 @@ function ConsoleModder:Run()
 		table.insert(self.history, fnstr)
         local toggle = self.screen.toggle_remote_execute
         self.remotetogglehistory[#self.history] = toggle
-        if rawget(G, ConsoleScreenSettings) then
+        if G.ConsoleScreenSettings then
             G.ConsoleScreenSettings:AddLastExecutedCommand(fnstr, toggle)
+            G.ConsoleScreenSettings:Save()
         end
 	end
 
@@ -459,14 +472,18 @@ function ConsoleModder:Run()
             fnstr = ("print(%s)"):format(fnstr:sub(2))
         end
 		G.TheNet:SendRemoteExecute(fnstr, x, z)
+
         self.screen.inst:DoTaskInTime(0, function ()
-            Logs:UpdateClusterLog(getshard())
-            --self.buttons[getshard()].onclick()
-            self.scrollable_log:RefreshWidgets(true)
+            local shard = getshard()
+            if shard then
+                self.buttons[shard].onclick()
+            end
+            --self.scrollable_log:RefreshWidgets(true)
         end)
 	else
 		G.ExecuteConsoleCommand(fnstr)
-        self.scrollable_log:RefreshWidgets()
+        --self.scrollable_log:RefreshWidgets()
+        self.buttons["Client"].onclick()
 	end
 end
 
