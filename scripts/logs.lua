@@ -6,7 +6,7 @@ LogHistory = Class(function (self)
     local name
     -- assuming first and only upvalue
     name, self.print_loggers = debug.getupvalue(G.AddPrintLogger, 1)
-    print("PRINT LOGGERS", self.print_loggers)
+
     modassert(name == "print_loggers", "unable to find print_loggers table")
 
     self.cluster = {}
@@ -75,15 +75,20 @@ end)
 function LogHistory:UpdateClusterLog(shard)
     local cluster_num
     local log = self.cluster[shard]
+    log:Erase()
+
     TheSim:GetPersistentString("slot", function (succ, num)
         if succ then cluster_num = tonumber(num) end
     end)
-    if not cluster_num then return end
+    if not cluster_num then
+        log:Push("(No cluster slot)")
+        return
+    end
     if cluster_num > G.CLOUD_SAVES_SAVE_OFFSET then
         log:Erase()
         log:Push("(Can not read from cloud save)")
     end
-    TheSim:GetPersistentString("../Cluster_1/"..shard.."/server_log.txt", function (succ, contents)
+    TheSim:GetPersistentString("../Cluster_"..cluster_num.."/"..shard.."/server_log.txt", function (succ, contents)
         if not succ then return end
         log:Erase()
         for line in contents:gmatch "[^\n]+" do
