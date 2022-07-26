@@ -1,6 +1,6 @@
 require "debugcommands"
 
-modimport "scripts/env"
+modimport "main/env"
 
 local G = GLOBAL
 
@@ -28,7 +28,7 @@ local ConsoleScreen = require("screens/consolescreen")
 ------------------------------------------
 ------------------------------------------
 
-modimport "scripts/reload"
+modimport "main/reload"
 
 ---@param loc table
 ---@param idx string
@@ -178,7 +178,7 @@ Assets = {
     Asset("ATLAS", "images/textbox_long_thinborder.xml"),
 }
 
-modimport "scripts/config"
+modimport "main/config"
 
 ModFenv(G.OnServerPauseDirty, {
     print = function(...)
@@ -209,7 +209,7 @@ function CodeMissingClosingStatement(lua)
         or statements["repeat"] > statements["until"]
 end
 
-AssertDefinitionSource(G, "ExecuteConsoleCommand", "scripts/mainfunctions.lua")
+AssertDefinitionSource(G, "ExecuteConsoleCommand", "main/mainfunctions.lua")
 ---@param fnstr string
 ---@param guid number
 ---@param x number
@@ -247,13 +247,13 @@ end
 ------------------------------------------------------------
 ------------------------------------------------------------
 
-modimport "scripts/logs"
+modimport "main/logs"
 Logs = LogHistory()
 
-modimport "scripts/consolemodder"
-modimport "scripts/textedit"
-modimport "scripts/consolelog"
-modimport "scripts/wordpredictionwidget"
+modimport "main/consolemodder"
+modimport "main/textedit"
+modimport "main/consolelog"
+modimport "main/wordpredictionwidget"
 
 local __ctor = Impurities.new(ConsoleScreen, "_ctor")
 ConsoleScreen._ctor = function(self, ...)
