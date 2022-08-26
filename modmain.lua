@@ -174,6 +174,22 @@ function G.c_revealmap(reveal)
     end
 end
 
+local MIN_NO_RECURSE = 100
+
+function PrettyPrint(v)
+    if type(v) == "table" then
+        local tbl = v
+        local count = 0
+        for _ in pairs(tbl) do
+            count = count + 1
+            if count >= MIN_NO_RECURSE then break end
+        end
+        print(table.inspect(tbl, count < MIN_NO_RECURSE and 2 or 1))
+    else
+        print(table.inspect(v))
+    end
+end
+
 ------------------------------------------
 ------------------------------------------
 
@@ -213,35 +229,41 @@ function CodeMissingClosingStatement(lua)
         or statements["repeat"] > statements["until"]
 end
 
+
+
 AssertDefinitionSource(G, "ExecuteConsoleCommand", "main/mainfunctions.lua")
 ---@param fnstr string
 ---@param guid number
 ---@param x number
 ---@param z number
 function G.ExecuteConsoleCommand(fnstr, guid, x, z)
+    --[[ copy pasted ]]
     local saved_ThePlayer
     if guid ~= nil then
         ThePlayer = guid ~= nil and Ents[guid] or nil
     end
     TheInput.overridepos = x ~= nil and z ~= nil and Vector3(x, 0, z) or nil
+    --[[ copy pasted ]]
 
+    -- lstrip "="
     local equalsstart = fnstr:find("^%=")
     if equalsstart then
         fnstr = fnstr:sub(2)
     end
 
+    -- First try evaluate as expression
     local result = {pcall(loadstring("return "..fnstr))}
+    -- If failed
     if not result[1] and not equalsstart then
         result = {pcall(loadstring(fnstr))}
     end
     if #result > 1 then
         for i = 2, #result do
-            result[i] = tostring(result[i])
+            PrettyPrint(result[i]);
         end
-
-        print(unpack(result, 2))
     end
 
+    --[[ copy pasted ]]
     if guid ~= nil then
         ThePlayer = saved_ThePlayer
     end

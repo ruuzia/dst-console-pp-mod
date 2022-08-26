@@ -497,7 +497,7 @@ function ConsoleModder:Run()
 	if self.screen.toggle_remote_execute then
         local x, _, z = TheSim:ProjectScreenPos(TheSim:GetPosition())
         if fnstr:byte() == string.byte("=") then
-            fnstr = ("print(%s)"):format(fnstr:sub(2))
+            fnstr = ("print(table.inspect((%s), 1))"):format(fnstr:sub(2))
         end
 		G.TheNet:SendRemoteExecute(fnstr, x, z)
 

@@ -94,6 +94,9 @@ function LogHistory:UpdateClusterLog(shard)
             return
         end
         for line in contents:gmatch "[^\n]+" do
+            -- Strip "[##:##:##]: " prefix
+            local _, nd = line:find("%[%d%d:%d%d:%d%d%]: ")
+            if nd then line = line:sub(nd+1) end
             log:Push(line)
         end
     end)
