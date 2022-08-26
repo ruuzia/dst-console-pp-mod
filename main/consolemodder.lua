@@ -484,10 +484,11 @@ function ConsoleModder:Run()
 
     G.SuUsedAdd("console_used")
 
-	if fnstr ~= "" and fnstr ~= self.history[#self.history] then
+	if fnstr ~= "" and fnstr ~= self.history[#self.history] or self.toggle ~= self.remotetogglehistory[#self.history] then
 		table.insert(self.history, fnstr)
         local toggle = self.screen.toggle_remote_execute
         self.remotetogglehistory[#self.history] = toggle
+        print(toggle)
         if G.ConsoleScreenSettings then
             G.ConsoleScreenSettings:AddLastExecutedCommand(fnstr, toggle)
             G.ConsoleScreenSettings:Save()
