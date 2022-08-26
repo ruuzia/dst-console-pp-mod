@@ -1,14 +1,14 @@
 CLIENT_ONLY = true
 ---@diagnostic disable:lowercase-global
 
-name = "Console++ "
+name = "Console++"
 author = "Friendly Grass"
 description = [=[
 This clientside mod implements many improvements to the DST command console.
 
 󰀔 View Steam description for details 󰀔
 ]=]
-version = "1.3.5"
+version = "1.3.6"
 dst_compatible = true
 forge_compatible = false
 gorge_compatible = false
@@ -19,8 +19,8 @@ icon_atlas = "modicon.xml"
 icon = "modicon.tex"
 forumthread = ""
 api_version_dst = 10
---client version runs first
-priority = CLIENT_ONLY and 1 or -1
+-- Other mods first for my incompatibility detection
+priority = -20
 mod_dependencies = {}
 
 server_filter_tags = {}
@@ -37,15 +37,29 @@ configuration_options = {
     },
     default = "ctrl"
 },
+
+{
+    name = "tabwidth",
+    label = "Tab Spaces",
+    hover = "Spaces to insert on a tab (No support for real tabs)",
+    options = {
+        { data = 0, description = "NONE" },
+        { data = 2, description = "Two" },
+        { data = 3, description = "Three" },
+        { data = 4, description = "Four" },
+        { data = 8, description = "Eight" },
+    },
+    default = 4
+},
 {
     --GetModConfigData("tab")
     name = "tab",
     label = "Tab Behaviour",
-    hover = "behaviour of tab key in text inputs",
+    hover = "Behaviour of tab key in text inputs (see Tab Spaces)",
     options = {
-        { data = "default", description = "Complete/Insert", hover = "Complete predictions. If there are none, insert 4 spaces." },
-        { data = "spaces", description = "Insert", hover = "Always insert equivalent spaces." },
-        { data = "complete", description = "Complete", hover = "Always try to complete prediction" },
+        --{ data = "default", description = "Complete/Insert", hover = "Complete predictions. If there are none, insert 4 spaces." },
+        --{ data = "spaces", description = "Insert", hover = "Always insert equivalent spaces." },
+        { data = "complete", description = "Complete", hover = "Complete prediction" },
         { data = "next", description = "Tab Through", hover = "Tab Through predictions (Ctrl + Tab to go backwards)." },
     },
     default = "default"
@@ -59,7 +73,7 @@ configuration_options = {
         { data = "%S", description = "All Non-Space Characters" },
         { data = "%w_", description = "Letters, numbers, and underscore" },
     },
-    default = "%S"
+    default = "%w_"
 },
 
 {
@@ -89,10 +103,3 @@ configuration_options = {
 },
 
 }
-
-
-
-
-
-
-

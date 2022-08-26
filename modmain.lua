@@ -77,6 +77,14 @@ end
 ---@param s string
 ---@param idx number
 ---@return number?
+---@return number?
+function StrGetLineBounds(s, idx, utf8)
+    return StrGetLineStart(s, idx, utf8), StrGetLineEnd(s, idx, utf8)
+end
+
+---@param s string
+---@param idx number
+---@return number?
 function StrGetLineEnd(s, idx, utf8)
     local uidx_dif = 0
     for i = idx+1, #s do
@@ -90,30 +98,26 @@ function StrGetLineEnd(s, idx, utf8)
     return #s + uidx_dif
 end
 
----@param s string
----@param idx number
----@return number?
----@return number?
-function StrGetLineBounds(s, idx, utf8)
-    return StrGetLineStart(s, idx, utf8), StrGetLineEnd(s, idx, utf8)
-end
-
+local Widget = require "widgets/widget"
 AddGamePostInit(function ()
-    if ConsolePP.save.HackText then
+    --- hot reload ---
+    if ConsolePP.save.PsuedoText then
         print("Removing old hacktext")
-        ConsolePP.save.HackText:Kill()
+        ConsolePP.save.PsuedoText:Kill()
     end
-    local hacktext = (require "widgets/widget")()
-    ConsolePP.save.HackText = hacktext
+    ------------------
+    local psuedotext = Widget()
+    ConsolePP.save.PsuedoText = psuedotext
 
-    hacktext.inst.entity:AddTextWidget()
-    hacktext:Hide()
+    psuedotext.inst.entity:AddTextWidget()
+    psuedotext:Hide()
 
     function CalcTextRegionSize(str, font, size)
-        hacktext.inst.TextWidget:SetSize(size * (G.LOC and G.LOC.GetTextScale() or 1))
-        hacktext.inst.TextWidget:SetFont(font)
-        hacktext.inst.TextWidget:SetString(str)
-        return hacktext.inst.TextWidget:GetRegionSize()
+        local textwidget = psuedotext.inst.TextWidget
+        textwidget:SetSize(size * (G.LOC and G.LOC.GetTextScale() or 1))
+        textwidget:SetFont(font)
+        textwidget:SetString(str)
+        return textwidget:GetRegionSize()
     end
 end)
 

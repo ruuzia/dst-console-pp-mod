@@ -16,12 +16,12 @@ function Config:SetRemoteToggleKey(key)
         [G.KEY_RALT]  = isalt,
     }
 end
+function Config:SetTabSpaces(numSpaces)
+    self.TABSPACES = numSpaces
+    self.TABINSERT = numSpaces > 0
+end
 function Config:SetTabMode(mode)
-    if mode == "default" then
-        self.TABINSERT = true
-        self.TABCOMPLETE = true
-    elseif mode == "spaces" then self.TABINSERT = true
-    elseif mode == "complete" then self.TABCOMPLETE = true
+    if mode == "complete" then self.TABCOMPLETE = true
     elseif mode == "next" then self.TABNEXT = true
     else
         moderror("Config:SetTabMode unknown mode: "..mode)
@@ -39,6 +39,7 @@ function Config:SetWordSet(regexset)
 end
 
 Config:SetRemoteToggleKey(GetModConfigData("remotetoggle"))
+Config:SetTabSpaces(GetModConfigData("tabwidth"))
 Config:SetTabMode(GetModConfigData("tab"))
 Config:SetScrollSpeed(GetModConfigData("scrollspeed"))
 Config:SetAutoManageLog(GetModConfigData("autoopencloselog"))

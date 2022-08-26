@@ -11,7 +11,7 @@ local edit_bg_padding = 50
 local baseypos = 75
 
 local Widget = require "widgets/widget"
-
+local ConsoleHistoryWidget = G.package.loaded["widgets/consolehistorywidget"]
 
 -- In beta
 G.global "ConsoleScreenSettings"
@@ -55,12 +55,14 @@ function ConsoleModder:InitiateHookers()
 
     local _OnRawKey = self.console_edit.OnRawKey
     self.console_edit.OnRawKey = function(s, ...)
-        return self:VerifyEditOnRawKey(...) and _OnRawKey(s, ...)
+        return self:VerifyEditOnRawKey(...) or _OnRawKey(s, ...)
     end
 
     local _ValidateChar = self.console_edit.ValidateChar
     self.console_edit.ValidateChar = function(s, ...)
-        return self:VerifyValidateChar(...) or _ValidateChar(s, ...)
+        local continue, valid = self:VerifyValidateChar(...)
+        if continue then return _ValidateChar(s, ...)
+        else return valid end
     end
 
     AssertDefinitionSource(self.screen, "OnRawKeyHandler", "scripts/screens/consolescreen.lua")
@@ -299,26 +301,37 @@ function ConsoleModder:PostInit()
 
     self.console_edit:SetPassControlToScreen(G.CONTROL_SCROLLBACK, true)
     self.console_edit:SetPassControlToScreen(G.CONTROL_SCROLLFWD, true)
-
-    --self.console_edit:EnableWordWrap(true)
-    --self.console_edit:EnableWhitespaceWrap(true)
-    --self.console_edit:EnableScrollEditWindow(true)
-
 end
 
+-- Produce bad input on some keybinds
+WINDOWS_FUNKY_INPUTS = {[3] = true, [12] = true}
+
 function ConsoleModder:VerifyValidateChar(c)
+    local continue = false
+    local valid = true
     -- If Ctrl+Enter, then we don't want to input a newline!
-    return c == '\n' and not TheInput:IsKeyDown(G.KEY_CTRL)
+    -- But we still want a new line when pasting
+    if WINDOWS_FUNKY_INPUTS[c:byte()] then
+        valid = false
+    elseif c == '\n' and (not TheInput:IsKeyDown(G.KEY_CTRL) or self.console_edit.pasting) then
+        valid = true
+    else
+        continue = true
+    end
+
+    return continue, valid
 end
 
 function ConsoleModder:VerifyEditOnRawKey(key, down)
     local ctrl_down = TheInput:IsKeyDown(G.KEY_CTRL)
+    local contents = self.console_edit:GetString()
+    local cursorpos = self.console_edit.inst.TextEditWidget:GetEditCursorPos()
 
     if key ~= G.KEY_DOWN and key ~= G.KEY_UP then
         self.goalxpos = nil
     end
     self.screen.inst:DoTaskInTime(0, function() self:AdjustLabelHeight() end)
-    if not down then return true end
+    if not down then return false end
 
     if key == G.KEY_PERIOD or (key == G.KEY_SEMICOLON and TheInput:IsKeyDown(G.KEY_SHIFT)) then
         self:DynamicComplete()
@@ -329,23 +342,28 @@ function ConsoleModder:VerifyEditOnRawKey(key, down)
     end
 
     if key == G.KEY_HOME then
-        self.console_edit.inst.TextEditWidget:SetEditCursorPos(
-            StrGetLineStart(self.console_edit:GetString(),
-            self.console_edit.inst.TextEditWidget:GetEditCursorPos()) - 1)
+        self.console_edit.inst.TextEditWidget:SetEditCursorPos(StrGetLineStart(contents, cursorpos) - 1)
         ForceFocusTextEditCursor(self.console_edit)
         return true
 
     elseif key == G.KEY_END then
-        self.console_edit.inst.TextEditWidget:SetEditCursorPos(
-            StrGetLineEnd(self.console_edit:GetString(),
-            self.console_edit.inst.TextEditWidget:GetEditCursorPos()))
+        self.console_edit.inst.TextEditWidget:SetEditCursorPos(StrGetLineEnd(contents, cursorpos))
         ForceFocusTextEditCursor(self.console_edit)
         return true
+
+    elseif key == KEY_BACKSPACE then
+        local linestart = StrGetLineStart(contents, cursorpos)
+        local chars = contents:sub(linestart, cursorpos)
+        if chars:find "^%s+$" then
+            for i = 1, math.min(#chars, 4) do
+                self.console_edit.inst.TextEditWidget:OnKeyDown(KEY_BACKSPACE)
+                --self.console_edit.inst.TextEditWidget:OnKeyUp(KEY_BACKSPACE)
+            end
+            return true
+        end
     end
 
     self.screen.inst:DoTaskInTime(0, function() self:AdjustLabelHeight() end)
-
-    return true
 end
 
 function ConsoleModder:UpdateGoalXPos()
@@ -408,6 +426,9 @@ function ConsoleModder:ScreenOnRawKeyHandler(key, down)
             if self.remotetogglehistory[self.screen.history_idx] ~= nil then
                 self.screen:ToggleRemoteExecute(self.remotetogglehistory[self.screen.history_idx])
             end
+            --[[
+            self.screen.console_history:Show(self.history, self.history_idx)
+            --]]
         end
 
     elseif key == G.KEY_DOWN then
@@ -436,6 +457,9 @@ function ConsoleModder:ScreenOnRawKeyHandler(key, down)
                 if self.remotetogglehistory[self.screen.history_idx] ~= nil then
                     self.screen:ToggleRemoteExecute(self.remotetogglehistory[self.screen.history_idx])
                 end
+                --[[
+                self.screen.console_history:Show(self.history, self.history_idx)
+                --]]
             end
         end
 
