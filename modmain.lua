@@ -218,15 +218,22 @@ function CodeMissingClosingStatement(lua)
 
     if encoded:find("%[=*%[") then return true end
 
-    local statements = {["function"] = 0, ["do"] = 0, ["if"] = 0, ["end"] = 0, ["repeat"] = 0, ["until"] = 0}
+    local stat = {
+        ["function"] = 0, ["do"] = 0, ["if"] = 0,
+        ["end"] = 0, ["repeat"] = 0, ["until"] = 0,
+        ["for"] = 0, ["while"] = 0, ["then"] = 0,
+        ["elseif"] = 0
+    }
     for word in encoded:gmatch("%w+") do
-        if statements[word] then
-            statements[word] = statements[word] + 1
+        if stat[word] then
+            stat[word] = stat[word] + 1
         end
     end
 
-    return statements["function"] + statements["do"] + statements["if"] > statements["end"]
-        or statements["repeat"] > statements["until"]
+    return stat["function"] + stat["do"] + stat["if"] > stat["end"]
+        or stat["repeat"]                             > stat["until"]
+        or stat["if"]       + stat["elseif"]          > stat["then"]
+        or stat["for"]      + stat["while"]           > stat["do"]
 end
 
 
