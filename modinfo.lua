@@ -102,4 +102,15 @@ configuration_options = {
     default = 2
 },
 
+{
+    name = "keepopen",
+    label = "Close with Ctrl",
+    hover = "Enter runs console by default and Ctrl+Enter closes (instead of reverse)",
+    options = {
+        { data = false, description = "Close by default" },
+        { data = true, description = "Run by default" },
+    },
+    default = false
+},
+
 }

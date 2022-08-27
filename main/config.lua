@@ -37,7 +37,11 @@ end
 function Config:SetWordSet(regexset)
     self.WORDSET = regexset
 end
+function Config:SetKeepOpenWithoutCtrl(keep_open)
+    self.KEEPCONSOLEOPEN = keep_open
+end
 
+Config:SetKeepOpenWithoutCtrl(GetModConfigData("keepopen"))
 Config:SetRemoteToggleKey(GetModConfigData("remotetoggle"))
 Config:SetTabSpaces(GetModConfigData("tabwidth"))
 Config:SetTabMode(GetModConfigData("tab"))

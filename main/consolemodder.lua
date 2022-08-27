@@ -99,11 +99,24 @@ function ConsoleModder:VerifyOnTextEntered()
     if TheInput:IsKeyDown(G.KEY_CTRL) then
         self:Run()
 
-        return true
-    -- Create newline on Shift+Enter or in unfinished block
-    elseif TheInput:IsKeyDown(G.KEY_SHIFT) or CodeMissingClosingStatement(self.console_edit:GetString()) then
+        if Config.KEEPCONSOLEOPEN then
+            self.console_edit:SetEditing(false)
+            return false
+        else
+            return true
+        end
+    -- Create newline on Shift+Enter
+    -- or in unfinished block
+    elseif TheInput:IsKeyDown(G.KEY_SHIFT)
+        or CodeMissingClosingStatement(self.console_edit:GetString())
+    then
         self.console_edit.inst.TextEditWidget:OnTextInput('\n')
         self:AdjustLabelHeight()
+        return true
+
+    -- KEEPCONSOLEOPEN by default just force runs
+    elseif Config.KEEPCONSOLEOPEN then
+        self:Run()
         return true
     else
         -- Close console!
@@ -304,15 +317,15 @@ function ConsoleModder:PostInit()
 end
 
 -- Produce bad input on some keybinds
-WINDOWS_FUNKY_INPUTS = {[3] = true, [12] = true}
+local WINDOWS_FUNKY_INPUTS = {[3] = true, [12] = true}
 
 function ConsoleModder:VerifyValidateChar(c)
     local continue = false
     local valid = true
-    -- If Ctrl+Enter, then we don't want to input a newline!
-    -- But we still want a new line when pasting
     if WINDOWS_FUNKY_INPUTS[c:byte()] then
         valid = false
+    -- If Ctrl+Enter, then we don't want to input a newline!
+    -- But we still want a new line when pasting
     elseif c == '\n' and (not TheInput:IsKeyDown(G.KEY_CTRL) or self.console_edit.pasting) then
         valid = true
     else
@@ -488,7 +501,6 @@ function ConsoleModder:Run()
 		table.insert(self.history, fnstr)
         local toggle = self.screen.toggle_remote_execute
         self.remotetogglehistory[#self.history] = toggle
-        print(toggle)
         if G.ConsoleScreenSettings then
             G.ConsoleScreenSettings:AddLastExecutedCommand(fnstr, toggle)
             G.ConsoleScreenSettings:Save()
