@@ -135,6 +135,16 @@ do
                 self.inst.TextEditWidget:SetEditCursorPos(i)
                 ForceFocusTextEditCursor(self)
                 return true
+
+            elseif control == G.CONTROL_OPEN_CRAFTING then -- c
+                TheSim:SetPersistentString("../psuedoclipboard.txt", '\n'..self:GetString(), false,
+                function (succ)
+                    if succ then
+                        print("Console contents saved to psuedoclipboard.txt!")
+                    else
+                        print("Erorr: Unable to write console contents to psuedoclipboard.txt!")
+                    end
+                end)
             end
         else
             -- This needs to be on mouse up for now because on mouse down, OnControl is called BEFORE OnMouseDown and so we wouldn't even know if the mouse was down yet!
