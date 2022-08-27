@@ -230,7 +230,6 @@ function CodeMissingClosingStatement(lua)
 end
 
 
-
 AssertDefinitionSource(G, "ExecuteConsoleCommand", "main/mainfunctions.lua")
 ---@param fnstr string
 ---@param guid number
