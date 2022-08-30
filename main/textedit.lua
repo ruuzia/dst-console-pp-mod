@@ -136,13 +136,14 @@ do
                 ForceFocusTextEditCursor(self)
                 return true
 
-            elseif control == G.CONTROL_OPEN_CRAFTING then -- c
-                TheSim:SetPersistentString("../psuedoclipboard.txt", '\n'..self:GetString(), false,
+            elseif control == G.CONTROL_OPEN_CRAFTING and ctrl_down then -- Ctrl-C
+                local file = "pseudoclipboard.txt"
+                TheSim:SetPersistentString("../"..file, '\n'..self:GetString(), false,
                 function (succ)
                     if succ then
-                        print("Console contents saved to psuedoclipboard.txt!")
+                        print("Console contents saved to "..file.."!")
                     else
-                        print("Erorr: Unable to write console contents to psuedoclipboard.txt!")
+                        print("Erorr: Unable to write console contents to "..file"..!")
                     end
                 end)
             end
