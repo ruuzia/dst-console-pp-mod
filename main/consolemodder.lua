@@ -164,9 +164,8 @@ end
 ---[[
 function ConsoleModder:PostOnBecomeActive()
     local remote = self.remotetogglehistory[#self.history]
-    if remote ~= nil then
-        self.screen:ToggleRemoteExecute(remote)
-    end
+    if remote == nil then remote = true end
+    self.screen:ToggleRemoteExecute(remote)
     TheFrontEnd.consoletext:Hide()
 
     Impurities:New(TheFrontEnd, "ShowConsoleLog")
@@ -500,10 +499,13 @@ function ConsoleModder:Run()
 
     G.SuUsedAdd("console_used")
 
-	if fnstr ~= "" and fnstr ~= self.history[#self.history] or self.toggle ~= self.remotetogglehistory[#self.history] then
-		table.insert(self.history, fnstr)
-        local toggle = self.screen.toggle_remote_execute
-        self.remotetogglehistory[#self.history] = toggle
+    local toggle = self.screen.toggle_remote_execute
+	if fnstr ~= "" and fnstr ~= self.history[#self.history] or toggle ~= self.remotetogglehistory[#self.history] then
+        table.insert(self.history, fnstr)
+        if G.TheNet:GetIsClient() and G.TheNet:GetIsServerAdmin() then
+            -- Only save remote togle history if remote was an *option*
+            self.remotetogglehistory[#self.history] = toggle
+        end
         if G.ConsoleScreenSettings then
             G.ConsoleScreenSettings:AddLastExecutedCommand(fnstr, toggle)
             G.ConsoleScreenSettings:Save()
