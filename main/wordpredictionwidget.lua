@@ -173,8 +173,7 @@ else
 end
 
 
-
-AssertDefinitionSource(WordPredictionWidget, "OnRawKey", "widgets/wordpredictionwidget")
+AssertDefinitionSource(WordPredictionWidget, "OnRawKey", "scripts/widgets/wordpredictionwidget.lua")
 function WordPredictionWidget:OnRawKey(key, down)
 	if key == KEY_BACKSPACE or key == KEY_DELETE then
 		self.active_prediction_btn = nil

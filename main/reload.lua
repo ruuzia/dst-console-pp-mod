@@ -5,48 +5,77 @@ local ModManager = G.ModManager
 local setmetatable = G.setmetatable
 
 --for hot reload - debug mode only?
-Impurities = {}
+Impurities = setmetatable({}, {__tostring = function(t) return tostring(t.items) end})
 
-Impurities.locations = setmetatable({}, { __mode = "kv" })
-Impurities.names = {}
-Impurities.originals = {}
+-- location keys are weak
+-- If the modified table no longer exists, we can freely forget it
+Impurities.items = setmetatable({}, { __mode == "k", __tostring = function(items)
+    local xs = {"Impurities:"}
+    for k,v in pairs(items) do
+        xs[#xs+1] = string.format('location (%s)\n%s', tostring(k), tostring(v))
+    end
+    return table.concat(xs, '\n')
+end})
+
+local item_mt = {__tostring = function(item)
+    local xs = {}
+    for k,v in pairs(item) do
+        xs[#xs+1] = string.format('\t(key = %s, orig = %s)', tostring(k), tostring(v))
+    end
+    return table.concat(xs, '\n')
+end}
 
 ---@param loc table
----@param name string
----@param old any?
----@return any
-function Impurities.new(loc, name, old)
-    table.insert(Impurities.names, name)
-    Impurities.locations[#Impurities.names] = loc
-    Impurities.originals[#Impurities.names] = old or loc[name]
-    return loc[name]
+---@param key any index of loc
+---@param origin any? the original value (default to current)
+---@return any current value of loc[key]
+function Impurities:New(loc, key, orig)
+    self.items[loc] = self.items[loc] or setmetatable({}, item_mt)
+    self.items[loc][key] = orig or loc[key]
+    return loc[key]
+end
+
+function Impurities:Restore(loc, key)
+    local item = self.items[loc]
+    if not item then return end          -- Keys (the locations) are weak,
+                                         --   Could have been already been GC'd
+    loc[key] = item[key]                 -- Restore the value
+    item[key] = nil                      -- Discard the impurity
+end
+
+function Impurities:Reset()
+    for loc, item in pairs(self.items) do
+        for k, orig in pairs(item) do
+            -- Restore
+            loc[k] = orig
+        end
+    end
+    -- Leave behind trash for garbage collector and start anew
+    self.items = {}
 end
 
 function G.d_cpm_reload(silent)
     local forceprint = print
     if silent then
-        print = function() end
+        env.print = function() end
         G.print = print
     end
     print "============ RELOAD ==============="
+    -- Close console if open
     local console_open = false
     if TheFrontEnd:GetActiveScreen().name == "ConsoleScreen" then
         console_open = true
         TheFrontEnd:PopScreen(TheFrontEnd:GetActiveScreen())
     end
-    for i = 1, #Impurities.names do
-        if Impurities.locations[i] then
-            Impurities.locations[i][Impurities.names[i]] = Impurities.originals[i]
-        end
-    end
+    Impurities:Reset()
     ModManager:FrontendUnloadMod(modname)
 
-	--G.ManifestManager:UnloadModManifest(string.sub(modname, 5))
+    -- Reload modinfos
     KnownModIndex:UpdateSingleModInfo(modname)
     KnownModIndex.savedata.known_mods[modname].modinfo = KnownModIndex:LoadModInfo(modname)
     KnownModIndex:LoadModConfigurationOptions(modname)
 
-
+    -- These only exist when isworldgen or isfrontend
     local isworldgen = CHARACTERLIST == nil
     local isfrontend = ReloadFrontEndAssets ~= nil
     local newenv = G.CreateEnvironment(modname, isworldgen, isfrontend)
