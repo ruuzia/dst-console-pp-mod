@@ -1,23 +1,26 @@
 local floor = math.floor
+local LEEWAY_MULT = 1.5
 
 local History = Class(function (self, max)
     self.size = max
-    -- when history reaches size + size_buffer, it is trimmed to size
-    self.lee = floor(max * 1.5)
 end)
 
 function History:TrimToSize()
     local excess = #self - self.size
+    -- Move elements down by excess
     for i = 1, self.size do
         self[i] = self[i + excess]
     end
+    -- Clean up excess
     for i = self.size+1, #self do
         self[i] = nil
     end
 end
 
 function History:Push(v)
-    if #self >= self.lee then
+    -- when history reaches 1.5x size, it is trimmed to size
+    -- this is much more performant than table.removing elements from the bottom on each insert
+    if #self >= self.size * LEEWAY_MULT then
         self:TrimToSize()
     end
     self[#self + 1] = v
