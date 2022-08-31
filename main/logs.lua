@@ -37,7 +37,7 @@ function LogHistory:SetUpdatingClient(update)
     -- @RELOAD ---
     if ConsolePP.save.clientlog_lines then
         for _, line in ipairs(ConsolePP.save.clientlog_lines) do
-            clientlog:Push(line)
+            self.client:Push(line)
         end
         local i = 1
         repeat
@@ -49,27 +49,32 @@ function LogHistory:SetUpdatingClient(update)
             end
         until i > #self.print_loggers
     end
-    ConsolePP.save.clientlog_lines = clientlog
+    ConsolePP.save.clientlog_lines = self.client
     -------------
 
-    local clientlog  = self.client
      function self.client_logger(...)
         local args = {...}
-        for i = 1, #args do
+        -- args can contain holes, so use select
+        local n = select("#", ...)
+        for i = 1, n do
             args[i] = tostring(args[i])
         end
         local str = table.concat(args)
         for line in str:gmatch "[^\n]+" do
-            clientlog:Push(line)
+            self.client:Push(line)
         end
+    end
+
+    for i, v in ipairs(G.GetConsoleOutputList()) do
+        self.client_logger(v)
     end
 
     self.print_loggers[#self.print_loggers+1] = self.client_logger
 end
 
-Hook (require"screens/redux/servercreationscreen", "Create", function (Create, scrn, ...)
+Hook (require"screens/redux/servercreationscreen", "Create", function (orig, scrn, ...)
     TheSim:SetPersistentString("slot", tostring(scrn.save_slot))
-    return Create(scrn, ...)
+    return orig(scrn, ...)
 end)
 
 function LogHistory:UpdateClusterLog(shard)

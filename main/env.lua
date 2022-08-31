@@ -2,9 +2,14 @@ local G = GLOBAL
 debug = G.debug
 unpack = G.unpack
 coroutine = G.coroutine
+getmetatable = G.getmetatable
+setmetatable = G.setmetatable
 tonumber = G.tonumber
 next = G.next
 rawget = G.rawget
+select = G.select
+setfenv = G.setfenv
+getfenv = G.getfenv
 
 -- pasted all keys
 KEY_TAB = 9

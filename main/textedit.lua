@@ -10,8 +10,8 @@ end
 
 local WordPredictionWidget = require "widgets/wordpredictionwidget"
 
-Hook(WordPredictionWidget, "_ctor", function(__ctor, self, ...)
-    __ctor(self, ...)
+Hook(WordPredictionWidget, "_ctor", function(orig, self, ...)
+    orig(self, ...)
     self.tab_complete = false -- I handle tab complete
     -- either enter_complete or tab_complete must be true for WordPredictionWidget:IsMouseOnly
     self.enter_complete = true
@@ -19,8 +19,9 @@ end)
 
 -- Changes for ALL textedits - not just console edit
 -- First OnRawKey to run
-Hook(TextEdit, "OnRawKey", function(_OnRawKey, self, key, down)
+Hook(TextEdit, "OnRawKey", function(orig, self, key, down)
     local ctrl_down = TheInput:IsKeyDown(G.KEY_LCTRL) or TheInput:IsKeyDown(G.KEY_RCTRL)
+    local active_prediction_btn = self.prediction_widget and self.prediction_widget.active_prediction_btn
 
     if down then
         if (key == G.KEY_BACKSPACE or key == G.KEY_DELETE) and TheInput:IsKeyDown(G.KEY_LSUPER) then
@@ -32,29 +33,28 @@ Hook(TextEdit, "OnRawKey", function(_OnRawKey, self, key, down)
             return true
 
         elseif key == G.KEY_TAB then
-            if Config.TABCOMPLETE and self.prediction_widget
-                                  and self.prediction_widget.active_prediction_btn
-            then
-                self:ApplyWordPrediction(self.prediction_widget.active_prediction_btn)
+            if Config.TABCOMPLETE and active_prediction_btn then
+                self:ApplyWordPrediction(active_prediction_btn)
+
+            elseif Config.TABNEXT and active_prediction_btn then
+                local prediction_btns = self.prediction_widget.prediction_btns
+                if active_prediction_btn then
+                    if TheInput:IsKeyDown(G.KEY_LCTRL) or TheInput:IsKeyDown(G.KEY_RCTRL) then
+                        prediction_btns[active_prediction_btn > 1 and active_prediction_btn - 1 or #prediction_btns]:Select()
+                    else
+                        prediction_btns[active_prediction_btn < #prediction_btns and active_prediction_btn + 1 or 1]:Select()
+                    end
+                end
+
             elseif Config.TABINSERT and self.nextTextEditWidget == nil then
                 for _ = 1, Config.TABSPACES do
                     self.inst.TextEditWidget:OnTextInput(' ')
-                end
-            elseif Config.TABNEXT and self.prediction_widget then
-                local active_btn_id = self.prediction_widget.active_prediction_btn
-                local prediction_btns = self.prediction_widget.prediction_btns
-                if active_btn_id then
-                    if TheInput:IsKeyDown(G.KEY_LCTRL) then
-                        prediction_btns[active_btn_id > 1 and active_btn_id - 1 or #prediction_btns]:Select()
-                    else
-                        prediction_btns[active_btn_id < #prediction_btns and active_btn_id + 1 or 1]:Select()
-                    end
                 end
             end
         end
     end
 
-    return _OnRawKey(self, key, down)
+    return orig(self, key, down)
 end)
 
 -- NOT using OnMouseButton because it registers clicks on children too, and OnControl(CONTROL_ACCEPT) is fired right after it which messes things up
@@ -95,7 +95,7 @@ local function onclicked(self, mouse_x, mouse_y)
 end
 
 do
-    local _OnControl = Impurities.new(TextEdit, "OnControl")
+    local _OnControl = Impurities:New(TextEdit, "OnControl")
     function TextEdit:OnControl(control, down)
         local ctrl_down = TheInput:IsKeyDown(G.KEY_LCTRL) or TheInput:IsKeyDown(G.KEY_RCTRL)
         if down then

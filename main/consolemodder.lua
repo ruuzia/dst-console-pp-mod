@@ -126,9 +126,9 @@ function ConsoleModder:VerifyOnTextEntered()
 end
 
 function ConsoleModder:Close()
-    -- use Class methods instead of overrides (assumes definitions are in FrontEnd class!)
-    TheFrontEnd.HideConsoleLog = nil
-    TheFrontEnd.ShowConsoleLog = nil
+    -- Undo overrides
+    Impurities:Restore(TheFrontEnd, "HideConsoleLog")
+    Impurities:Restore(TheFrontEnd, "ShowConsoleLog")
 
 	TheInput:EnableDebugToggle(true)
 	TheFrontEnd:PopScreen(self.screen)
@@ -168,13 +168,16 @@ function ConsoleModder:PostOnBecomeActive()
         self.screen:ToggleRemoteExecute(remote)
     end
     TheFrontEnd.consoletext:Hide()
-    function TheFrontEnd.ShowConsoleLog(frontend)
+
+    Impurities:New(TheFrontEnd, "ShowConsoleLog")
+    Impurities:New(TheFrontEnd, "HideConsoleLog")
+    TheFrontEnd.ShowConsoleLog = function (frontend)
         self.islogshown = true
         frontend.consoletext.shown = self.islogshown
         self.scrollable_log:Show()
         for _,btn in ipairs(self.buttons) do btn:Show() end
     end
-    function TheFrontEnd.HideConsoleLog(frontend)
+    TheFrontEnd.HideConsoleLog = function (frontend)
         self.islogshown = false
         frontend.consoletext.shown = false
         self.scrollable_log:Hide()
@@ -510,7 +513,7 @@ function ConsoleModder:Run()
 	if self.screen.toggle_remote_execute then
         local x, _, z = TheSim:ProjectScreenPos(TheSim:GetPosition())
         if fnstr:byte() == string.byte("=") then
-            fnstr = ("print(table.inspect((%s), 1))"):format(fnstr:sub(2))
+            fnstr = string.format("print(table.inspect((%s), 1))", fnstr:sub(2))
         end
 		G.TheNet:SendRemoteExecute(fnstr, x, z)
 
