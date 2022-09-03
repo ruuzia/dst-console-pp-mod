@@ -12,6 +12,7 @@ local baseypos = 75
 
 local Widget = require "widgets/widget"
 local ConsoleHistoryWidget = G.package.loaded["widgets/consolehistorywidget"]
+local WordPredictor = require "util/wordpredictor"
 
 -- In beta
 G.global "ConsoleScreenSettings"
@@ -81,8 +82,15 @@ function ConsoleModder:InitiateHookers()
     self.screen.OnTextEntered = function(s, ...)
         return self:VerifyOnTextEntered() or _OnTextEntered(s, ...)
     end
-    AssertDefinitionSource(self.screen, "Run", "scripts/screens/consolescreen.lua")
 
+    local word_predictor = self.console_edit.prediction_widget.word_predictor
+
+    local _RefreshPredictions = word_predictor.RefreshPredictions
+    word_predictor.RefreshPredictions = function (word_predictor, text, cursor_pos)
+        if not self:DynamicComplete(word_predictor, text, cursor_pos) then _RefreshPredictions(word_predictor, text, cursor_pos) end
+    end
+
+    AssertDefinitionSource(self.screen, "Run", "scripts/screens/consolescreen.lua")
     self.screen.Run = function()
         return self:Run()
     end
@@ -348,9 +356,11 @@ function ConsoleModder:VerifyEditOnRawKey(key, down)
     self.screen.inst:DoTaskInTime(0, function() self:AdjustLabelHeight() end)
     if not down then return false end
 
+    --[[
     if key == G.KEY_PERIOD or (key == G.KEY_SEMICOLON and TheInput:IsKeyDown(G.KEY_SHIFT)) then
         self:DynamicComplete()
     end
+    --]]
 
     if not Config.REMOTETOGGLEKEYS[key] and ctrl_down then
         self.screen.ctrl_pasting = true
@@ -541,18 +551,30 @@ local indexing_regexp = '()'       --> start index
                      .. '%s*'
                      .. '([.:])'   --> indexer
                      .. '$'
+
+local function keysgen(str, pos)
+    pos = pos and pos - 1 or #str
+    local wstart, word, call, indexer = str:sub(1, pos):match(indexing_regexp)
+    if wstart then return wstart, word, call, indexer end
+end
+
 --bypass strict.lua
 local rawglobal = G.setmetatable({}, {__index=function(_, k) return rawget(G, k) end})
 local simple_get_display_string = function(word) return word end
 
-function ConsoleModder:DynamicComplete()
-    if not self.console_edit.prediction_widget then return end
-    local str = self.console_edit:GetString()
-    local pos = self.console_edit.inst.TextEditWidget:GetEditCursorPos()
+function ConsoleModder:DynamicComplete(word_predictor, str, pos)
+    do -- include word past cursor
+        local _, endw = str:find("[%w_]*", pos+1)
+        if endw then pos = endw end
+    end
+    str = str:sub(1, pos)
+    local search_start = str:match("[.:]()[%w]*$")
+    if not search_start then return false end
+
     local tnames = {}
     local calls = {}
     local indexers = {}
-    local searchpos = pos
+    local searchpos = search_start - 1
     local expressionstart
     repeat
         local wstart, word, call, indexer = str:sub(1, searchpos):match(indexing_regexp)
@@ -578,7 +600,7 @@ function ConsoleModder:DynamicComplete()
     end
 
     local keys = {}
-    local onlyfuncs = str:byte(pos) == string.byte(":")
+    local onlyfuncs = str:byte(search_start - 1) == string.byte(':')
     if type(t) == "table" then
         for k,v in pairs(t) do
             if type(k) == "string" and (not onlyfuncs or type(v) == "function") then
@@ -596,21 +618,48 @@ function ConsoleModder:DynamicComplete()
     end
     if not keys[1] then return end
     local delim = str:sub(expressionstart, pos)
+    --[[
     for _,v in ipairs(self.console_edit.prediction_widget.word_predictor.dictionaries) do
         if v.delim == delim then
             v.words = keys
             return self.console_edit.prediction_widget:RefreshPredictions()
         end
     end
-    self.console_edit:AddWordPredictionDictionary {
+    --]]
+    local dic = {
         words = keys,
         delim = delim,
         num_chars = 0,
         GetDisplayString = simple_get_display_string,
-    }
+        postfix = '',
+    };
+    local matches = {}
+    local inds = {}
+    local caseinsensitive = true
+    local search_string = str:sub(search_start):lower()
+    if caseinsensitive then search_string = search_string:lower() end
+    for _, word in ipairs(keys) do
+        inds[word] = (caseinsensitive and word:lower() or word):find(search_string, 1, true)
+        if inds[word] then table.insert(matches, word) end
+    end
+    table.sort(matches, function(a, b) return inds[a] == inds[b] and a < b or inds[a] < inds[b] end)
+
+    if #matches > 0 then
+        word_predictor.text = str
+        word_predictor.cursor_pos = pos
+        word_predictor.prediction = {
+            start_pos = search_start-1,
+            matches = matches,
+            dictionary = dic,
+        }
+    else
+        word_predictor.prediction = nil
+    end
+    return true
+    --[[
     local dicts = self.console_edit.prediction_widget.word_predictor.dictionaries
     --bring new dictionary to front
     dicts[1], dicts[#dicts] = dicts[#dicts], dicts[1]
-    self.console_edit.prediction_widget:RefreshPredictions()
+    --]]
 end
 
