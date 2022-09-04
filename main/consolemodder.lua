@@ -550,102 +550,108 @@ local indexing_regexp = '()'       --> start index
                      .. '(%(?%)?)' --> optional call --support only for simple calls
                      .. '%s*'
                      .. '([.:])'   --> indexer
+                     .. '%s*'
                      .. '$'
 
-local function keysgen(str, pos)
-    pos = pos and pos - 1 or #str
-    local wstart, word, call, indexer = str:sub(1, pos):match(indexing_regexp)
-    if wstart then return wstart, word, call, indexer end
+local function keymatches_gen(str, pos)
+    pos = pos - 1
+    -- Start of index returned by string.match is the control variable!
+    return str:sub(1, pos):match(indexing_regexp)
 end
 
 --bypass strict.lua
 local rawglobal = G.setmetatable({}, {__index=function(_, k) return rawget(G, k) end})
 local simple_get_display_string = function(word) return word end
 
-function ConsoleModder:DynamicComplete(word_predictor, str, pos)
+local function iscallable(v)
+    return type(v) == "function" or type(GetMetaField(v, "__call")) == "function"
+end
+
+local function isindexable(v)
+    return type(v) == "table" or type(GetMetaField(v, "__index")) == "table"
+end
+
+function ConsoleModder:DynamicComplete(word_predictor, text, pos)
     do -- include word past cursor
-        local _, endw = str:find("[%w_]*", pos+1)
+        local _, endw = text:find("[%w_]*", pos+1)
         if endw then pos = endw end
     end
-    str = str:sub(1, pos)
+    local str = text:sub(1, pos)
     local search_start = str:match("[.:]()[%w]*$")
     if not search_start then return false end
 
-    local tnames = {}
-    local calls = {}
-    local indexers = {}
-    local searchpos = search_start - 1
+    local tnames, calls = {}, {}
     local expressionstart
-    repeat
-        local wstart, word, call, indexer = str:sub(1, searchpos):match(indexing_regexp)
-    if not wstart then break end
+    local lastindexer = str:sub(search_start-1, search_start-1)
+    -- We start at the end and go backwards matching indexing
+    for wstart, word, call, indexer in keymatches_gen, str, search_start do
         expressionstart = wstart
-        searchpos = wstart - 1
         table.insert(tnames, word)
-        calls[#tnames] = call
-        indexers[#tnames] = indexer
-    until false
+
+        if call == "()" then
+            calls[#tnames] = "func"
+        elseif call ~= "" then
+            -- Invalid
+            return false
+        end
+
+        if indexer == ":" then
+            -- t:func().
+            local lastcall = #tnames - 1
+            if calls[lastcall] == "func" then calls[lastcall] = "method" end
+        end
+        lastindexer = indexer
+    end
     if #tnames <= 0 then return end
 
     local t = rawglobal
-    local mt
     for i = #tnames, 1, -1 do
         local prevtbl = t
+        -- Next layer in table
         t = t[tnames[i]]
-        if type(t) == "function" and calls[i] == "()" then
-            t = t(indexers[i+1] == ":" and prevtbl or nil)
+        if calls[i] and iscallable(t) then
+            t = t(calls[i] == "method" and prevtbl or nil)
         end
-        mt = G.getmetatable(t)
-        if type(t) ~= "table" and (not mt or type(mt.__index) ~= "table") then return end
+        if not isindexable(t) then return end
     end
 
     local keys = {}
     local onlyfuncs = str:byte(search_start - 1) == string.byte(':')
-    if type(t) == "table" then
-        for k,v in pairs(t) do
-            if type(k) == "string" and (not onlyfuncs or type(v) == "function") then
-                table.insert(keys, k)
+    local tbls = {}
+    -- For now I don't handle recursive __index chains
+    for _,tbl in ipairs {t, GetMetaField(t, '__index')} do
+        if type(tbl) == "table" then
+            for k,v in pairs(tbl) do
+                if type(k) == "string" and (not onlyfuncs or iscallable(v)) then
+                    table.insert(keys, k)
+                end
             end
         end
     end
-    --supports metatable __index but not a whole chain of them
-    if mt and type(mt.__index) == "table" then
-        for k,v in pairs(mt.__index) do
-            if type(k) == "string" and (not onlyfuncs or type(v) == "function") then
-                table.insert(keys, k)
-            end
-        end
-    end
-    if not keys[1] then return end
+    if #keys == 0 then return end
+
     local delim = str:sub(expressionstart, pos)
-    --[[
-    for _,v in ipairs(self.console_edit.prediction_widget.word_predictor.dictionaries) do
-        if v.delim == delim then
-            v.words = keys
-            return self.console_edit.prediction_widget:RefreshPredictions()
-        end
-    end
-    --]]
+
     local dic = {
         words = keys,
         delim = delim,
         num_chars = 0,
         GetDisplayString = simple_get_display_string,
-        postfix = '',
+        postfix = "",
     };
     local matches = {}
     local inds = {}
-    local caseinsensitive = true
-    local search_string = str:sub(search_start):lower()
-    if caseinsensitive then search_string = search_string:lower() end
+    local search_string = str:sub(search_start)
+    if not Config.CASESENSITIVE then search_string = search_string:lower() end
     for _, word in ipairs(keys) do
-        inds[word] = (caseinsensitive and word:lower() or word):find(search_string, 1, true)
+        inds[word] = (Config.CASESENSITIVE and word or word:lower()):find(search_string, 1, true)
         if inds[word] then table.insert(matches, word) end
     end
+    -- Sort first by start index and then alphabetically
     table.sort(matches, function(a, b) return inds[a] == inds[b] and a < b or inds[a] < inds[b] end)
 
     if #matches > 0 then
-        word_predictor.text = str
+        word_predictor.text = text
         word_predictor.cursor_pos = pos
         word_predictor.prediction = {
             start_pos = search_start-1,
@@ -653,13 +659,34 @@ function ConsoleModder:DynamicComplete(word_predictor, str, pos)
             dictionary = dic,
         }
     else
-        word_predictor.prediction = nil
+        word_predictor:Clear()
     end
     return true
-    --[[
-    local dicts = self.console_edit.prediction_widget.word_predictor.dictionaries
-    --bring new dictionary to front
-    dicts[1], dicts[#dicts] = dicts[#dicts], dicts[1]
-    --]]
 end
 
+-- Modified to support completing in the middle
+AssertDefinitionSource(WordPredictor, "Apply", "scripts/util/wordpredictor.lua")
+function WordPredictor:Apply(prediction_index)
+    -- COPY PASTED
+	local new_text = nil
+	local new_cursor_pos = nil
+	if self.prediction ~= nil then
+		local new_word = self.prediction.matches[math.clamp(prediction_index or 1, 1, #self.prediction.matches)]
+
+		new_text = self.text:sub(1, self.prediction.start_pos) .. new_word .. self.prediction.dictionary.postfix
+		new_cursor_pos = #new_text
+
+        --[[OLD]]--local endpos = FindEndCursorPos(self.text, self.cursor_pos)
+		--[[NEW]]local endpos = self.prediction.start_pos + (delim and #delim or 0)
+		local remainder_text = self.text:sub(endpos+1) or ""
+		local remainder_strip_pos = remainder_text:find("[^a-zA-Z0-9]") or (#remainder_text + 1)
+		if self.prediction.dictionary.postfix ~= "" and remainder_text:sub(remainder_strip_pos, remainder_strip_pos + (#self.prediction.dictionary.postfix-1)) == self.prediction.dictionary.postfix then
+			remainder_strip_pos = remainder_strip_pos + #self.prediction.dictionary.postfix
+		end
+
+		new_text = new_text .. remainder_text:sub(remainder_strip_pos)
+	end
+
+	self:Clear()
+	return new_text, new_cursor_pos
+end

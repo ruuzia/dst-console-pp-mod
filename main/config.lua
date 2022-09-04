@@ -37,6 +37,9 @@ end
 function Config:SetKeepOpenWithoutCtrl(keep_open)
     self.KEEPCONSOLEOPEN = keep_open
 end
+function Config:SetCaseSensitive(iscasesensitive)
+    self.CASESENSITIVE = iscasesensitive
+end
 
 function Config:Update()
     Config:SetKeepOpenWithoutCtrl (GetModConfigData "keepopen")
@@ -46,6 +49,7 @@ function Config:Update()
     Config:SetScrollSpeed         (GetModConfigData "scrollspeed")
     Config:SetAutoManageLog       (GetModConfigData "autoopencloselog")
     Config:SetWordSet             (GetModConfigData "wordset")
+    Config:SetCaseSensitive       (GetModConfigData "casesensitive")
 
     Config.IGNORES = {["Server Unpaused"] = true, ["Server Autopaused"] = true, ["Server Paused"] = false}
 end

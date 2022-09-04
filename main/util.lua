@@ -175,3 +175,8 @@ function CodeMissingClosingStatement(lua)
         or stat["if"]       + stat["elseif"]          > stat["then"]
         or stat["for"]      + stat["while"]           > stat["do"]
 end
+
+function GetMetaField(t, k)
+    local mt = getmetatable(t)
+    return mt and mt[k]
+end

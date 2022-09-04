@@ -62,7 +62,7 @@ configuration_options = {
         { data = "complete", description = "Complete", hover = "Complete prediction" },
         { data = "next", description = "Tab Through", hover = "Tab Through predictions (Ctrl + Tab to go backwards)." },
     },
-    default = "default"
+    default = "complete"
 },
 
 {
@@ -111,6 +111,17 @@ configuration_options = {
         { data = true, description = "Run by default" },
     },
     default = false
+},
+
+{
+    name = "casesensitive",
+    label = "Case Sensitive Completions",
+    hover = "Case sensitivity of dynamic autocompletions when indexing with '.' or ':'",
+    options = {
+        { data = true, description = "Case Sensitive" },
+        { data = false, description = "Case Insensitive" },
+    },
+    default = true,
 },
 
 }
