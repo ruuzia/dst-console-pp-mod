@@ -53,7 +53,6 @@ function ConsoleModder:InitiateHookers()
         self:PostOnBecomeActive()
     end
 
-
     local _OnRawKey = self.console_edit.OnRawKey
     self.console_edit.OnRawKey = function(s, ...)
         return self:VerifyEditOnRawKey(...) or _OnRawKey(s, ...)
@@ -83,12 +82,19 @@ function ConsoleModder:InitiateHookers()
         return self:VerifyOnTextEntered() or _OnTextEntered(s, ...)
     end
 
+    local _ToggleRemoteExecute = self.screen.ToggleRemoteExecute
+    self.screen.ToggleRemoteExecute = function(...)
+        _ToggleRemoteExecute(...)
+        self:PostToggleRemoteExecute()
+    end
+
     local word_predictor = self.console_edit.prediction_widget.word_predictor
 
     local _RefreshPredictions = word_predictor.RefreshPredictions
     word_predictor.RefreshPredictions = function (word_predictor, text, cursor_pos)
         if not self:DynamicComplete(word_predictor, text, cursor_pos) then _RefreshPredictions(word_predictor, text, cursor_pos) end
     end
+
 
     AssertDefinitionSource(self.screen, "Run", "scripts/screens/consolescreen.lua")
     self.screen.Run = function()
@@ -209,7 +215,7 @@ local TEMPLATES = require "widgets/redux/templates"
 
 local function make_log_switch_buttons(self)
     -- If no dedicated servers, don't make buttons
-    if not G.TheNet:GetIsClient() and not G.TheNet:GetIsHosting() then return end
+    --if not G.TheNet:GetIsClient() and not G.TheNet:GetIsHosting() then return end
 
     local x = -490
     local y = 210
@@ -228,12 +234,11 @@ local function make_log_switch_buttons(self)
         btn:SetPosition(x, y)
     end
 
-    local colours = {G.WEBCOLOURS.TEAL, G.WEBCOLOURS.ORANGE}
     for i, shard in ipairs {"Master", "Caves"} do
         local btn = self.staticroot:AddChild(TEMPLATES.StandardButton(function ()
             Logs:UpdateClusterLog(shard)
             self.scrollable_log.history = Logs.cluster[shard]
-            self.scrollable_log:SetTextColour(unpack(colours[i]))
+            self.scrollable_log:SetTextColour(unpack(Config.SHARD_LOG_COLOURS[shard]))
             self.scrollable_log:RefreshWidgets(true)
 
             self.console_edit:SetEditing(true)
@@ -242,8 +247,8 @@ local function make_log_switch_buttons(self)
         btn:SetPosition(x + i * 100, y)
         table.insert(self.buttons, btn)
         self.buttons[shard] = btn
-        btn:SetTextColour(colours[i])
-        btn:SetTextFocusColour(colours[i])
+        btn:SetTextColour(Config.SHARD_LOG_COLOURS[shard])
+        btn:SetTextFocusColour(Config.SHARD_LOG_COLOURS[shard])
     end
 end
 
@@ -501,6 +506,15 @@ end
 function ConsoleModder:VerifyOnControl(control, down)
     if not down and control == G.CONTROL_OPEN_DEBUG_CONSOLE and TheInput:IsKeyDown(G.KEY_SHIFT) then
         return true
+    end
+end
+
+function ConsoleModder:PostToggleRemoteExecute()
+    local label = self.screen.console_remote_execute
+    if self.screen.toggle_remote_execute then
+        label:SetColour(Config.SHARD_LOG_COLOURS[getshard()])
+    else
+        label:SetColour(1,0.7,0.7,1)
     end
 end
 

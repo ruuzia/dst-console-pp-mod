@@ -124,4 +124,15 @@ configuration_options = {
     default = true,
 },
 
+{
+    name = "logtheme",
+    label = "Shard Log Colours",
+    hover = "Colours of Master and Caves logs",
+    options = {
+        { data = "default", description = "Default", hover = "Teal and orange" },
+        { data = "alternative", description = "Alternative", hover = "Less extreme maybe? Shades of purple." },
+    },
+    default = "default",
+},
+
 }

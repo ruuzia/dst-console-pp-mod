@@ -40,6 +40,19 @@ end
 function Config:SetCaseSensitive(iscasesensitive)
     self.CASESENSITIVE = iscasesensitive
 end
+function Config:SetConsoleLogTheme(theme)
+    if theme == "default" then
+        Config.SHARD_LOG_COLOURS = {
+            Master = G.PLAYERCOLOURS.TEAL,
+            Caves = G.PLAYERCOLOURS.ORANGE,
+        }
+    elseif theme == "alternative" then
+        Config.SHARD_LOG_COLOURS = {
+            Master = {0.50, 0.2, 0.40, 1.0},
+            Caves = G.PLAYERCOLOURS.DARKPLUM,
+        }
+    end
+end
 
 function Config:Update()
     Config:SetKeepOpenWithoutCtrl (GetModConfigData "keepopen")
@@ -50,6 +63,7 @@ function Config:Update()
     Config:SetAutoManageLog       (GetModConfigData "autoopencloselog")
     Config:SetWordSet             (GetModConfigData "wordset")
     Config:SetCaseSensitive       (GetModConfigData "casesensitive")
+    Config:SetConsoleLogTheme     (GetModConfigData "logtheme")
 
     Config.IGNORES = {["Server Unpaused"] = true, ["Server Autopaused"] = true, ["Server Paused"] = false}
 end
