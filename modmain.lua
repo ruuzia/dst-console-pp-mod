@@ -80,7 +80,6 @@ AssertDefinitionSource(G, "ExecuteConsoleCommand", "scripts/mainfunctions.lua")
 ---@param x number
 ---@param z number
 function G.ExecuteConsoleCommand(fnstr, guid, x, z)
-    --[[ copy pasted ]]
     local saved_ThePlayer = G.ThePlayer
     G.ThePlayer = guid ~= nil and Ents[guid] or nil
     TheInput.overridepos = x ~= nil and z ~= nil and Vector3(x, 0, z) or nil
@@ -103,7 +102,6 @@ function G.ExecuteConsoleCommand(fnstr, guid, x, z)
         end
     end
 
-    --[[ copy pasted ]]
     if guid ~= nil then
         G.ThePlayer = saved_ThePlayer
     end
