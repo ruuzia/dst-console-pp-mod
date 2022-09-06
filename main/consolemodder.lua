@@ -685,9 +685,15 @@ local function findindexing(text, cursorpos)
 end
 
 AddModRPCHandler(RPC_NAMESPACE, "RequestCompletions", function(player, str)
+    -- Temp inject "ThePlayer" into console
+    local saved_ThePlayer = G.ThePlayer
+    G.ThePlayer = player
+
     local exprstart, matches = getpossiblekeys(str, getsearchstart(str))
     if not matches then return end
     SendModRPCToClient(GetClientModRPC(RPC_NAMESPACE, "Completions"), player.userid, str, exprstart, table.concat(matches, '\n'))
+
+    G.ThePlayer = saved_ThePlayer
 end)
 
 local _ignore = false
@@ -727,7 +733,7 @@ function ConsoleModder:DynamicComplete(wp, text, pos)
     wp.cursor_pos = pos
     --wp.prediction = nil
 
-    if modinfo.client_only_mod or RUNNING_DEDICATED or not self.screen.toggle_remote_execute then
+    if modinfo.client_only_mod or IS_DEDICATED or not self.screen.toggle_remote_execute then
         local exprstart, matches = getpossiblekeys(str, search_start)
         if not matches then return true end
         forcewordprediction(wp, str, exprstart, matches)

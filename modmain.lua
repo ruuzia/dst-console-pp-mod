@@ -15,7 +15,7 @@ env.dprint = DEBUG and print or function() end
 G.global "ConsolePP"
 ConsolePP = G.ConsolePP or {}
 
-RUNNING_DEDICATED = TheNet:GetIsServer() and TheNet:IsDedicated()
+IS_DEDICATED = TheNet:IsDedicated()
 local client_only_version_exists = ConsolePP.env and ConsolePP.env.modinfo.client_only_mod
 local ismastersim = TheNet:GetIsMasterSimulation()
 
@@ -81,12 +81,9 @@ AssertDefinitionSource(G, "ExecuteConsoleCommand", "scripts/mainfunctions.lua")
 ---@param z number
 function G.ExecuteConsoleCommand(fnstr, guid, x, z)
     --[[ copy pasted ]]
-    local saved_ThePlayer
-    if guid ~= nil then
-        ThePlayer = guid ~= nil and Ents[guid] or nil
-    end
+    local saved_ThePlayer = G.ThePlayer
+    G.ThePlayer = guid ~= nil and Ents[guid] or nil
     TheInput.overridepos = x ~= nil and z ~= nil and Vector3(x, 0, z) or nil
-    --[[ copy pasted ]]
 
     -- lstrip "="
     local equalsstart = fnstr:find("^%=")
@@ -108,7 +105,7 @@ function G.ExecuteConsoleCommand(fnstr, guid, x, z)
 
     --[[ copy pasted ]]
     if guid ~= nil then
-        ThePlayer = saved_ThePlayer
+        G.ThePlayer = saved_ThePlayer
     end
     TheInput.overridepos = nil
 end
@@ -119,7 +116,7 @@ end
 modimport "main/logs"
 Logs = LogHistory()
 
-AddClientModRPCHandler(RPCNamespace, "ClusterLog", function(shard, content)
+AddClientModRPCHandler(RPC_NAMESPACE, "ClusterLog", function(shard, content)
     --printf("%s server log (len: %d) retrieved!", shard, #content)
     Logs:SetClusterLogContents(shard, content)
 end)
