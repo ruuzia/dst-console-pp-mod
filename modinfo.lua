@@ -1,4 +1,4 @@
-CLIENT_ONLY = true
+CLIENT_ONLY = false
 ---@diagnostic disable:lowercase-global
 
 name = "Console++"

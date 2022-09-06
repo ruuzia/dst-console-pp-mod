@@ -15,12 +15,17 @@ env.dprint = DEBUG and print or function() end
 G.global "ConsolePP"
 ConsolePP = G.ConsolePP or {}
 
+RUNNING_DEDICATED = TheNet:GetIsServer() and TheNet:IsDedicated()
 local client_only_version_exists = ConsolePP.env and ConsolePP.env.modinfo.client_only_mod
+local ismastersim = TheNet:GetIsMasterSimulation()
+
 
 ConsolePP.save = ConsolePP.save or {}
 ConsolePP.tmp = setmetatable({}, {__mode = "v"})
 ConsolePP.env = env
 G.ConsolePP = ConsolePP
+
+RPC_NAMESPACE = "ConsolePP"
 
 local ConsoleScreen = require("screens/consolescreen")
 
@@ -48,7 +53,7 @@ end
 
 local ModConfigurationScreen = require "screens/redux/modconfigurationscreen"
 function G.c_config()
-    TheFrontEnd:PushScreen(ModConfigurationScreen(modname, false))
+    TheFrontEnd:PushScreen(ModConfigurationScreen(modname, true))
 end
 
 ------------------------------------------
@@ -113,6 +118,23 @@ end
 
 modimport "main/logs"
 Logs = LogHistory()
+
+AddClientModRPCHandler(RPCNamespace, "ClusterLog", function(shard, content)
+    --printf("%s server log (len: %d) retrieved!", shard, #content)
+    Logs:SetClusterLogContents(shard, content)
+end)
+
+local MAX_LOG_SEND_LENGTH = 1e4
+
+AddModRPCHandler(RPC_NAMESPACE, "RequestClusterLog", function(player, shard)
+    --printf("Getting %s server log for %s", shard, tostring(player))
+    TheSim:GetPersistentString("../../"..shard.."/server_log.txt", function(succ, contents)
+        --printf("Persistent string callback, success: %s, len %d", tostring(succ), #contents)
+        if succ then
+            SendModRPCToClient(GetClientModRPC(RPC_NAMESPACE, "ClusterLog"), player.userid, shard, contents:sub(-MAX_LOG_SEND_LENGTH))
+        end
+    end)
+end)
 
 modimport "main/consolemodder"
 modimport "main/textedit"

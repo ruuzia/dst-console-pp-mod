@@ -55,6 +55,15 @@ function Impurities:Reset()
 end
 
 function G.d_cpm_reload(silent)
+    -- Update client
+    if RUNNING_DEDICATED then
+        SendModRPCToClient(GetClientModRPC(RPC_NAMESPACE, "d_reload"), nil)
+    end
+    if TheNet:IsDedicated() then
+        G.MOD_RPC[RPC_NAMESPACE] = nil
+        G.MOD_RPC_HANDLERS[RPC_NAMESPACE] = nil
+    end
+
     local forceprint = print
     if silent then
         env.print = function() end
@@ -63,7 +72,7 @@ function G.d_cpm_reload(silent)
     print "============ RELOAD ==============="
     -- Close console if open
     local console_open = false
-    if TheFrontEnd:GetActiveScreen().name == "ConsoleScreen" then
+    if TheNet:GetIsClient() and TheFrontEnd:GetActiveScreen().name == "ConsoleScreen" then
         console_open = true
         TheFrontEnd:PopScreen(TheFrontEnd:GetActiveScreen())
     end
@@ -124,3 +133,5 @@ function G.d_cpm_reload(silent)
         G.print = forceprint
     end
 end
+
+AddClientModRPCHandler(RPC_NAMESPACE, "d_reload", G.d_cpm_reload)

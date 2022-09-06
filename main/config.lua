@@ -55,15 +55,15 @@ function Config:SetConsoleLogTheme(theme)
 end
 
 function Config:Update()
-    Config:SetKeepOpenWithoutCtrl (GetModConfigData "keepopen")
-    Config:SetRemoteToggleKey     (GetModConfigData "remotetoggle")
-    Config:SetTabSpaces           (GetModConfigData "tabwidth")
-    Config:SetTabMode             (GetModConfigData "tab")
-    Config:SetScrollSpeed         (GetModConfigData "scrollspeed")
-    Config:SetAutoManageLog       (GetModConfigData "autoopencloselog")
-    Config:SetWordSet             (GetModConfigData "wordset")
-    Config:SetCaseSensitive       (GetModConfigData "casesensitive")
-    Config:SetConsoleLogTheme     (GetModConfigData "logtheme")
+    Config:SetKeepOpenWithoutCtrl (GetModConfigData("keepopen", true))
+    Config:SetRemoteToggleKey     (GetModConfigData("remotetoggle", true))
+    Config:SetTabSpaces           (GetModConfigData("tabwidth", true))
+    Config:SetTabMode             (GetModConfigData("tab", true))
+    Config:SetScrollSpeed         (GetModConfigData("scrollspeed", true))
+    Config:SetAutoManageLog       (GetModConfigData("autoopencloselog", true))
+    Config:SetWordSet             (GetModConfigData("wordset", true))
+    Config:SetCaseSensitive       (GetModConfigData("casesensitive", true))
+    Config:SetConsoleLogTheme     (GetModConfigData("logtheme", true))
 
     Config.IGNORES = {["Server Unpaused"] = true, ["Server Autopaused"] = true, ["Server Paused"] = false}
 end

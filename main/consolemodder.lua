@@ -215,7 +215,7 @@ local TEMPLATES = require "widgets/redux/templates"
 
 local function make_log_switch_buttons(self)
     -- If no dedicated servers, don't make buttons
-    --if not G.TheNet:GetIsClient() and not G.TheNet:GetIsHosting() then return end
+    if not TheNet:GetIsClient() and not G.TheNet:GetIsHosting() then return end
 
     local x = -490
     local y = 210
@@ -236,10 +236,11 @@ local function make_log_switch_buttons(self)
 
     for i, shard in ipairs {"Master", "Caves"} do
         local btn = self.staticroot:AddChild(TEMPLATES.StandardButton(function ()
-            Logs:UpdateClusterLog(shard)
+            Logs:UpdateClusterLog(shard, function()
+                self.scrollable_log:RefreshWidgets(true)
+            end)
             self.scrollable_log.history = Logs.cluster[shard]
             self.scrollable_log:SetTextColour(unpack(Config.SHARD_LOG_COLOURS[shard]))
-            self.scrollable_log:RefreshWidgets(true)
 
             self.console_edit:SetEditing(true)
             return true
@@ -360,12 +361,6 @@ function ConsoleModder:VerifyEditOnRawKey(key, down)
     end
     self.screen.inst:DoTaskInTime(0, function() self:AdjustLabelHeight() end)
     if not down then return false end
-
-    --[[
-    if key == G.KEY_PERIOD or (key == G.KEY_SEMICOLON and TheInput:IsKeyDown(G.KEY_SHIFT)) then
-        self:DynamicComplete()
-    end
-    --]]
 
     if not Config.REMOTETOGGLEKEYS[key] and ctrl_down then
         self.screen.ctrl_pasting = true
@@ -516,6 +511,7 @@ function ConsoleModder:PostToggleRemoteExecute()
     else
         label:SetColour(1,0.7,0.7,1)
     end
+    self.console_edit.prediction_widget:RefreshPredictions()
 end
 
 function ConsoleModder:Run()
@@ -524,9 +520,10 @@ function ConsoleModder:Run()
     G.SuUsedAdd("console_used")
 
     local toggle = self.screen.toggle_remote_execute
-	if fnstr ~= "" and fnstr ~= self.history[#self.history] or toggle ~= self.remotetogglehistory[#self.history] then
+    local valid_to_use_remote = self.screen.console_remote_execute.shown
+	if fnstr ~= "" and fnstr ~= self.history[#self.history] or valid_to_use_remote and toggle ~= self.remotetogglehistory[#self.history] then
         table.insert(self.history, fnstr)
-        if G.TheNet:GetIsClient() and G.TheNet:GetIsServerAdmin() then
+        if valid_to_use_remote then
             -- Only save remote togle history if remote was an *option*
             self.remotetogglehistory[#self.history] = toggle
         end
@@ -541,7 +538,7 @@ function ConsoleModder:Run()
         if fnstr:byte() == string.byte("=") then
             fnstr = string.format("print(table.inspect((%s), 1))", fnstr:sub(2))
         end
-		G.TheNet:SendRemoteExecute(fnstr, x, z)
+		TheNet:SendRemoteExecute(fnstr, x, z)
 
         self.screen.inst:DoTaskInTime(0, function ()
             local shard = getshard()
@@ -585,15 +582,7 @@ local function isindexable(v)
     return type(v) == "table" or type(GetMetaField(v, "__index")) == "table"
 end
 
-function ConsoleModder:DynamicComplete(word_predictor, text, pos)
-    do -- include word past cursor
-        local _, endw = text:find("[%w_]*", pos+1)
-        if endw then pos = endw end
-    end
-    local str = text:sub(1, pos)
-    local search_start = str:match("[.:]()[%w]*$")
-    if not search_start then return false end
-
+local function getpossiblekeys(str, search_start)
     local tnames, calls = {}, {}
     local expressionstart
     local lastindexer = str:sub(search_start-1, search_start-1)
@@ -606,7 +595,7 @@ function ConsoleModder:DynamicComplete(word_predictor, text, pos)
             calls[#tnames] = "func"
         elseif call ~= "" then
             -- Invalid
-            return false
+            return
         end
 
         if indexer == ":" then
@@ -633,26 +622,22 @@ function ConsoleModder:DynamicComplete(word_predictor, text, pos)
     local onlyfuncs = str:byte(search_start - 1) == string.byte(':')
     local tbls = {}
     -- For now I don't handle recursive __index chains
-    for _,tbl in ipairs {t, GetMetaField(t, '__index')} do
+    local prevtbl
+    for i,tbl in ipairs {t, GetMetaField(t, '__index')} do
         if type(tbl) == "table" then
             for k,v in pairs(tbl) do
-                if type(k) == "string" and (not onlyfuncs or iscallable(v)) then
+                if type(k) == "string" and (not onlyfuncs or iscallable(v)) and (not prevtbl or prevtbl[k] == nil) then
+                    -- Key is a string
+                    -- If `:`, value must be callable
+                    -- Key shouldn't be a duplicate
                     table.insert(keys, k)
                 end
             end
+            prevtbl = tbl
         end
     end
     if #keys == 0 then return end
 
-    local delim = str:sub(expressionstart, pos)
-
-    local dic = {
-        words = keys,
-        delim = delim,
-        num_chars = 0,
-        GetDisplayString = simple_get_display_string,
-        postfix = "",
-    };
     local matches = {}
     local inds = {}
     local search_string = str:sub(search_start)
@@ -661,20 +646,102 @@ function ConsoleModder:DynamicComplete(word_predictor, text, pos)
         inds[word] = (Config.CASESENSITIVE and word or word:lower()):find(search_string, 1, true)
         if inds[word] then table.insert(matches, word) end
     end
+
+    if #matches == 1 and matches[1] == search_string then return end
+
     -- Sort first by start index and then alphabetically
     table.sort(matches, function(a, b) return inds[a] == inds[b] and a < b or inds[a] < inds[b] end)
 
-    if #matches > 0 then
-        word_predictor.text = text
-        word_predictor.cursor_pos = pos
-        word_predictor.prediction = {
+    return expressionstart, matches
+end
+
+local function getsearchstart(str)
+    return str:match("[.:]()[%w_]*$")
+end
+
+local function forcewordprediction(wp, str, exprstart, matches)
+    local dic = {
+        words = matches,
+        delim = str:sub(exprstart),
+        num_chars = 0,
+        GetDisplayString = simple_get_display_string,
+        postfix = "",
+    };
+    local search_start = getsearchstart(str)
+    if search_start and #matches > 0 then
+        wp.prediction = {
             start_pos = search_start-1,
             matches = matches,
             dictionary = dic,
         }
     else
-        word_predictor:Clear()
+        wp:Clear()
     end
+end
+
+local function findindexing(text, cursorpos)
+    local _, endw = text:find("[%w_]*", cursorpos+1)
+    return endw or cursorpos
+end
+
+AddModRPCHandler(RPC_NAMESPACE, "RequestCompletions", function(player, str)
+    local exprstart, matches = getpossiblekeys(str, getsearchstart(str))
+    if not matches then return end
+    SendModRPCToClient(GetClientModRPC(RPC_NAMESPACE, "Completions"), player.userid, str, exprstart, table.concat(matches, '\n'))
+end)
+
+local _ignore = false
+
+AddClientModRPCHandler(RPC_NAMESPACE, "Completions", function(completestr, exprstart, matches)
+    -- Check console screen is still open
+    local scrn = TheFrontEnd:GetActiveScreen()
+    if scrn.name ~= "ConsoleScreen" then return end
+    -- Check text still starts the same
+    local text = scrn.console_edit:GetString()
+    if not text:sub(1, #completestr) == completestr then return end
+
+    matches = matches:split('\n')
+    local endpos = findindexing(text, #completestr)
+
+    local str = text:sub(1, endpos)
+    local wp = scrn.console_edit.prediction_widget.word_predictor
+    wp.text = text
+    
+    forcewordprediction(wp, str, exprstart, matches)
+
+    _ignore = true
+    scrn.console_edit.prediction_widget:RefreshPredictions()
+end)
+
+local _completionrequest_task
+function ConsoleModder:DynamicComplete(wp, text, pos)
+    -- only doing this to force refresh the buttons
+    if _ignore then _ignore = false return true end
+
+    pos = findindexing(text, pos)
+    local str = text:sub(1, pos)
+    local search_start = getsearchstart(str)
+    if not search_start then return false end
+
+    wp.text = text
+    wp.cursor_pos = pos
+    --wp.prediction = nil
+
+    if modinfo.client_only_mod or RUNNING_DEDICATED or not self.screen.toggle_remote_execute then
+        local exprstart, matches = getpossiblekeys(str, search_start)
+        if not matches then return true end
+        forcewordprediction(wp, str, exprstart, matches)
+    else
+        -- We don't want to be doing multiple of these reqests in a frame
+        if _completionrequest_task then
+            _completionrequest_task:Cancel()
+            _completionrequest_task = nil
+        end
+        _completionrequest_task = self.screen.inst:DoTaskInTime(0, function()
+            SendModRPCToServer(GetModRPC(RPC_NAMESPACE, "RequestCompletions"), str)
+        end)
+    end
+
     return true
 end
 
@@ -693,7 +760,7 @@ function WordPredictor:Apply(prediction_index)
         --[[OLD]]--local endpos = FindEndCursorPos(self.text, self.cursor_pos)
 		--[[NEW]]local endpos = self.prediction.start_pos + (delim and #delim or 0)
 		local remainder_text = self.text:sub(endpos+1) or ""
-		local remainder_strip_pos = remainder_text:find("[^a-zA-Z0-9]") or (#remainder_text + 1)
+		local remainder_strip_pos = remainder_text:find("[^a-zA-Z0-9_]") or (#remainder_text + 1)
 		if self.prediction.dictionary.postfix ~= "" and remainder_text:sub(remainder_strip_pos, remainder_strip_pos + (#self.prediction.dictionary.postfix-1)) == self.prediction.dictionary.postfix then
 			remainder_strip_pos = remainder_strip_pos + #self.prediction.dictionary.postfix
 		end

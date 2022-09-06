@@ -1,4 +1,4 @@
-local G = GLOBAL
+local G = GLOBAL    -- Keeping G alias local for now
 debug = G.debug
 unpack = G.unpack
 coroutine = G.coroutine
@@ -10,8 +10,9 @@ rawget = G.rawget
 select = G.select
 setfenv = G.setfenv
 getfenv = G.getfenv
+TheNet = G.TheNet
 
--- pasted all keys
+-------- pasted all keys -------------
 KEY_TAB = 9
 KEY_KP_0			= 256
 KEY_KP_1			= 257
@@ -118,3 +119,4 @@ KEY_6 = 54
 KEY_7 = 55
 KEY_8 = 56
 KEY_9 = 57
+------------- end --------------------

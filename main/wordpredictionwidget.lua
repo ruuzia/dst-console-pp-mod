@@ -177,7 +177,8 @@ AssertDefinitionSource(WordPredictionWidget, "OnRawKey", "scripts/widgets/wordpr
 function WordPredictionWidget:OnRawKey(key, down)
 	if key == KEY_BACKSPACE or key == KEY_DELETE then
 		self.active_prediction_btn = nil
-		self:RefreshPredictions()
+        -- Wait till text is updated
+		self.inst:DoTaskInTime(0, function() self:RefreshPredictions() end)
 		return false  -- do not consume the key press
 
 	elseif self.word_predictor.prediction ~= nil then

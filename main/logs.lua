@@ -77,34 +77,49 @@ Hook (require"screens/redux/servercreationscreen", "Create", function (orig, scr
     return orig(scrn, ...)
 end)
 
-function LogHistory:UpdateClusterLog(shard)
-    local cluster_num
-    local log = self.cluster[shard]
-    log:Erase()
-
-    TheSim:GetPersistentString("slot", function (succ, num)
-        if succ then cluster_num = tonumber(num) end
-    end)
-    if not cluster_num then
-        log:Push("(No cluster slot)")
-        return
-    end
-    if cluster_num > G.CLOUD_SAVES_SAVE_OFFSET then
-        log:Push("(Can not read from cloud save)")
-    end
-    local path = "../Cluster_"..cluster_num.."/"..shard.."/server_log.txt"
-    TheSim:GetPersistentString(path, function (succ, contents)
-        if not succ then
-            log:Push("(Failed to load "..path..")")
+function LogHistory:UpdateClusterLog(shard, onupdated)
+    if modinfo.client_only_mod or TheNet:GetIsServer() then
+        local cluster_num
+        TheSim:GetPersistentString("slot", function (succ, num)
+            if succ then cluster_num = tonumber(num) end
+        end)
+        if not cluster_num then
+            self:SetClusterLogContents(shard, "(No cluster slot)")
             return
         end
-        for line in contents:gmatch "[^\n]+" do
-            -- Strip "[##:##:##]: " prefix
-            local _, nd = line:find("%[%d%d:%d%d:%d%d%]: ")
-            if nd then line = line:sub(nd+1) end
-            log:Push(line)
+        if cluster_num > G.CLOUD_SAVES_SAVE_OFFSET then
+            self:SetClusterLogContents(shard, "(Can not read from cloud save)")
+            return;
         end
-    end)
+        local path = "../Cluster_"..cluster_num.."/"..shard.."/server_log.txt"
+        TheSim:GetPersistentString(path, function (succ, contents)
+            if not succ then
+                self:SetClusterLogContents(shard, "(Failed to load "..path..")")
+                return
+            end
+
+            self:SetClusterLogContents(shard, contents)
+        end)
+        onupdated()
+    else
+        --printf("Sending %s server log request", shard)
+        SendModRPCToServer(GetModRPC(RPC_NAMESPACE, "RequestClusterLog"), shard)
+        self._onupdated_callback = onupdated
+    end
+end
+
+function LogHistory:SetClusterLogContents(shard, contents)
+    local log = self.cluster[shard]
+    log:Erase()
+    local count = 0
+    for line in contents:gmatch "[^\n]+" do
+        -- Strip "[##:##:##]: " prefix
+        local _, nd = line:find("%[%d%d:%d%d:%d%d%]: ")
+        if nd then line = line:sub(nd+1) end
+        log:Push(line)
+        count = count + 1
+    end
+    if self._onupdated_callback then self._onupdated_callback() end
 end
 
 function LogHistory:InitClusterLog(folder)
