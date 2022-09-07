@@ -25,6 +25,7 @@ ConsoleModder = Class(function (self, screen, console_history, localremote_histo
     self.remotetogglehistory     = assert(localremote_history)
     self.current                 = assert(self.console_edit:GetString())
     self.islogshown              = Config.OPENLOGWITHCONSOLE or TheFrontEnd.consoletext.shown
+    --self.undo = nil
 
     self.buttons = {}
 
@@ -333,7 +334,7 @@ function ConsoleModder:PostInit()
 end
 
 -- Produce bad input on some keybinds
-local WINDOWS_FUNKY_INPUTS = {[3] = true, [12] = true}
+local WINDOWS_FUNKY_INPUTS = {[3] = true, [12] = true, [25] = true, [26] = true}
 
 function ConsoleModder:VerifyValidateChar(c)
     local continue = false
@@ -386,6 +387,20 @@ function ConsoleModder:VerifyEditOnRawKey(key, down)
             end
             return true
         end
+
+    elseif ctrl_down and key == KEY_Z then
+        if contents ~= "" then
+            self.console_edit:SetString("")
+            self.undo = contents
+        end
+        return true
+
+    elseif ctrl_down and key == KEY_Y then
+        if self.undo then
+            self.console_edit:SetString(self.undo)
+            self.undo = nil
+        end
+        return true
     end
 
     self.screen.inst:DoTaskInTime(0, function() self:AdjustLabelHeight() end)
@@ -735,7 +750,10 @@ function ConsoleModder:DynamicComplete(wp, text, pos)
 
     if modinfo.client_only_mod or IS_DEDICATED or not self.screen.toggle_remote_execute then
         local exprstart, matches = getpossiblekeys(str, search_start)
-        if not matches then return true end
+        if not matches then
+            wp:Clear()
+            return true
+        end
         forcewordprediction(wp, str, exprstart, matches)
     else
         -- We don't want to be doing multiple of these reqests in a frame
