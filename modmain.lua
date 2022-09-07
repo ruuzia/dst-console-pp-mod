@@ -1,3 +1,9 @@
+if G.ConsolePP and G.ConsolePP.env.modinfo.all_clients_require_mod then
+    -- Server+all_clients version already exists
+    -- Don't run client-only mod
+    return
+end
+
 require "debugcommands"
 
 modimport "main/env"
@@ -16,7 +22,7 @@ G.global "ConsolePP"
 ConsolePP = G.ConsolePP or {}
 
 IS_DEDICATED = TheNet:IsDedicated()
-local client_only_version_exists = ConsolePP.env and ConsolePP.env.modinfo.client_only_mod
+
 local ismastersim = TheNet:GetIsMasterSimulation()
 
 
@@ -81,7 +87,7 @@ AssertDefinitionSource(G, "ExecuteConsoleCommand", "scripts/mainfunctions.lua")
 ---@param z number
 function G.ExecuteConsoleCommand(fnstr, guid, x, z)
     local saved_ThePlayer = G.ThePlayer
-    G.ThePlayer = guid ~= nil and Ents[guid] or nil
+    if guid then G.ThePlayer = Ents[guid] end
     TheInput.overridepos = x ~= nil and z ~= nil and Vector3(x, 0, z) or nil
 
     -- lstrip "="
@@ -102,9 +108,7 @@ function G.ExecuteConsoleCommand(fnstr, guid, x, z)
         end
     end
 
-    if guid ~= nil then
-        G.ThePlayer = saved_ThePlayer
-    end
+    G.ThePlayer = saved_ThePlayer
     TheInput.overridepos = nil
 end
 

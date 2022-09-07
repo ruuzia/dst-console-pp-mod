@@ -1,4 +1,4 @@
-CLIENT_ONLY = false
+CLIENT_VERSION = false
 ---@diagnostic disable:lowercase-global
 
 name = "Console++"
@@ -13,14 +13,16 @@ dst_compatible = true
 forge_compatible = false
 gorge_compatible = false
 dont_starve_compatible = false
-client_only_mod = CLIENT_ONLY
-all_clients_require_mod = not CLIENT_ONLY
+client_only_mod = CLIENT_VERSION
+all_clients_require_mod = not CLIENT_VERSION
 icon_atlas = "modicon.xml"
 icon = "modicon.tex"
 forumthread = ""
 api_version_dst = 10
 -- Other mods first for my incompatibility detection
 priority = -20
+-- Client version should start before server
+if CLIENT_VERSION then priority = priority - 1 end
 mod_dependencies = {}
 
 server_filter_tags = {}
