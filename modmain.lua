@@ -1,3 +1,5 @@
+local G = GLOBAL
+
 if G.ConsolePP and G.ConsolePP.env.modinfo.all_clients_require_mod then
     -- Server+all_clients version already exists
     -- Don't run client-only mod
@@ -7,8 +9,6 @@ end
 require "debugcommands"
 
 modimport "main/env"
-
-local G = GLOBAL
 
 local pcall, loadstring, Ents, Vector3 = G.pcall, G.loadstring, G.Ents, G.Vector3
 local TheInput = G.TheInput
