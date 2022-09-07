@@ -1,5 +1,6 @@
 local G = GLOBAL
 
+G.global "ConsolePP"
 if G.ConsolePP and G.ConsolePP.env.modinfo.all_clients_require_mod then
     -- Server+all_clients version already exists
     -- Don't run client-only mod
@@ -18,7 +19,6 @@ DEBUG = not modname:find("^workshop-")
 -- dprint does nothing on workshop release version
 env.dprint = DEBUG and print or function() end
 
-G.global "ConsolePP"
 ConsolePP = G.ConsolePP or {}
 
 IS_DEDICATED = TheNet:IsDedicated()
