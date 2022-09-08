@@ -10,6 +10,11 @@ end
 
 local WordPredictionWidget = require "widgets/wordpredictionwidget"
 
+-- Remove old typo file --
+TheSim:ErasePersistentString("../psuedoclipboard.txt")
+------------------------------
+local PSEUDO_CLIPBOARD_FILE = "../pseudoclipboard.txt"
+
 Hook(WordPredictionWidget, "_ctor", function(orig, self, ...)
     orig(self, ...)
     self.tab_complete = false -- I handle tab complete
@@ -141,8 +146,7 @@ do
                 return true
 
             elseif control == G.CONTROL_OPEN_CRAFTING and ctrl_down then -- Ctrl-C
-                local file = "pseudoclipboard.txt"
-                TheSim:SetPersistentString("../"..file, '\n'..self:GetString(), false,
+                TheSim:SetPersistentString(PSEUDO_CLIPBOARD_FILE, '\n'..self:GetString(), false,
                 function (succ)
                     if succ then
                         print("Console contents saved to "..file.."!")
