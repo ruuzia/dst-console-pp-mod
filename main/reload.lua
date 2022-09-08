@@ -4,33 +4,18 @@ local KnownModIndex = G.KnownModIndex
 local ModManager = G.ModManager
 local setmetatable = G.setmetatable
 
---for hot reload - debug mode only?
-Impurities = setmetatable({}, {__tostring = function(t) return tostring(t.items) end})
+Impurities = {}
 
 -- location keys are weak
 -- If the modified table no longer exists, we can freely forget it
-Impurities.items = setmetatable({}, { __mode == "k", __tostring = function(items)
-    local xs = {"Impurities:"}
-    for k,v in pairs(items) do
-        xs[#xs+1] = string.format('location (%s)\n%s', tostring(k), tostring(v))
-    end
-    return table.concat(xs, '\n')
-end})
-
-local item_mt = {__tostring = function(item)
-    local xs = {}
-    for k,v in pairs(item) do
-        xs[#xs+1] = string.format('\t(key = %s, orig = %s)', tostring(k), tostring(v))
-    end
-    return table.concat(xs, '\n')
-end}
+Impurities.items = {}
 
 ---@param loc table
 ---@param key any index of loc
 ---@param origin any? the original value (default to current)
 ---@return any current value of loc[key]
 function Impurities:New(loc, key, orig)
-    self.items[loc] = self.items[loc] or setmetatable({}, item_mt)
+    self.items[loc] = self.items[loc] or {}
     self.items[loc][key] = orig or loc[key]
     return loc[key]
 end

@@ -130,7 +130,7 @@ local MIN_NO_RECURSE = 100
 function PrettyPrint(v)
     if type(v) == "table" then
         -- If it has a tostring method, call it
-        if getmetatable(v) and getmetatable(v).__tostring then
+        if GetMetaField(v, '__tostring') then
             print(v)
         else
             -- table.inspect can really struggle with big tables (at least with PUC-Lua)

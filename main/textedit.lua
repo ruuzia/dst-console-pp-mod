@@ -24,7 +24,7 @@ Hook(TextEdit, "OnRawKey", function(orig, self, key, down)
     local active_prediction_btn = self.prediction_widget and self.prediction_widget.active_prediction_btn
 
     if down then
-        if (key == G.KEY_BACKSPACE or key == G.KEY_DELETE) and TheInput:IsKeyDown(G.KEY_LSUPER) then
+        if (key == KEY_BACKSPACE or key == KEY_DELETE) and TheInput:IsKeyDown(KEY_LSUPER) then
             local str = self:GetString()
             local pos = self.inst.TextEditWidget:GetEditCursorPos()
             local i = StrGetLineStart(str, pos)
@@ -99,6 +99,8 @@ do
     function TextEdit:OnControl(control, down)
         local ctrl_down = TheInput:IsKeyDown(G.KEY_LCTRL) or TheInput:IsKeyDown(G.KEY_RCTRL)
         if down then
+            -- Why do these all need to be in OnControl, again?
+            --
             -- TODO: Doesn't work for holding down backspace
             if (control == G.CONTROL_TOGGLE_DEBUGRENDER) and ctrl_down then
                 local str = self:GetString()

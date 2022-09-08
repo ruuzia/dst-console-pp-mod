@@ -1,16 +1,18 @@
 local G = GLOBAL    -- Keeping G alias local for now
-debug = G.debug
-unpack = G.unpack
-coroutine = G.coroutine
+debug        = G.debug
+unpack       = G.unpack
+coroutine    = G.coroutine
 getmetatable = G.getmetatable
 setmetatable = G.setmetatable
-tonumber = G.tonumber
-next = G.next
-rawget = G.rawget
-select = G.select
-setfenv = G.setfenv
-getfenv = G.getfenv
-TheNet = G.TheNet
+tonumber     = G.tonumber
+next         = G.next
+rawget       = G.rawget
+select       = G.select
+assert       = G.assert
+setfenv      = G.setfenv
+getfenv      = G.getfenv
+TheNet       = G.TheNet
+TheInput     = G.TheInput
 
 -------- pasted all keys -------------
 KEY_TAB = 9
