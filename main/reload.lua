@@ -129,4 +129,7 @@ function G.d_cpm_reload(silent)
     end
 end
 
-AddClientModRPCHandler(RPC_NAMESPACE, "d_reload", G.d_cpm_reload)
+AddClientModRPCHandler(RPC_NAMESPACE, "d_reload", function()
+    if IS_DEDICATED then return end
+    G.d_cpm_reload()
+end)

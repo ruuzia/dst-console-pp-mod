@@ -1,4 +1,4 @@
-CLIENT_VERSION = true
+CLIENT_VERSION = false
 ---@diagnostic disable:lowercase-global
 
 name = "Console++"

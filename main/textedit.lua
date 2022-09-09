@@ -11,7 +11,7 @@ end
 local WordPredictionWidget = require "widgets/wordpredictionwidget"
 
 -- Remove old typo file --
-TheSim:ErasePersistentString("../psuedoclipboard.txt")
+AddGamePostInit(function() TheSim:ErasePersistentString("../psuedoclipboard.txt") end)
 ------------------------------
 local PSEUDO_CLIPBOARD_FILE = "../pseudoclipboard.txt"
 

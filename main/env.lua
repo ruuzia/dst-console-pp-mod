@@ -13,6 +13,7 @@ setfenv      = G.setfenv
 getfenv      = G.getfenv
 TheNet       = G.TheNet
 TheInput     = G.TheInput
+os           = G.os
 
 -------- pasted all keys -------------
 KEY_TAB = 9
