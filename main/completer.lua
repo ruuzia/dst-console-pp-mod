@@ -293,20 +293,21 @@ function TryComplete(prediction_widget, text, cursor_pos, remote_execute)
         end
 
         if running_in_client then
-            local matches = getpossiblekeys({ [0] = { identifier = search_string }, { identifier = "_G" } }, G.ThePlayer)
-            if not matches then
-                wp:Clear()
-                return true
+            if Config.AUTOCOMPLETING then
+                local matches = getpossiblekeys({ [0] = { identifier = search_string }, { identifier = "_G" } }, G.ThePlayer)
+                if not matches then
+                    wp:Clear()
+                    return true
+                end
+                forcewordprediction(wp, str, search_start, matches)
             end
-            forcewordprediction(wp, str, search_start, matches)
-        else
+        elseif Config.AUTOCOMPLETING then
             -- We don't want to be doing multiple of these reqests in a frame
             -- So each one overwrites the previous
             set_completion_request_task(function()
                 SendModRPCToServer(GetModRPC(RPC_NAMESPACE, "RequestGlobalCompletions"), str)
             end)
-        end
-
+        else return end
     else return end
 
     wp.text = text

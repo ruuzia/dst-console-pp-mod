@@ -56,6 +56,9 @@ end
 function Config:SetEnterComplete(enabled)
     Config.ENTERCOMPLETE = enabled
 end
+function Config:SetAutocomplete(enabled)
+    Config.AUTOCOMPLETING = enabled
+end
 
 function Config:Update()
     Config:SetKeepOpenWithoutCtrl (GetModConfigData("keepopen", true))
@@ -68,6 +71,7 @@ function Config:Update()
     Config:SetWordSet             (GetModConfigData("wordset", true))
     Config:SetCaseSensitive       (GetModConfigData("casesensitive", true))
     Config:SetConsoleLogTheme     (GetModConfigData("logtheme", true))
+    Config:SetAutocomplete        (GetModConfigData("autocomplete", true))
 
     Config.IGNORES = {["Server Unpaused"] = true, ["Server Autopaused"] = true, ["Server Paused"] = false}
 end

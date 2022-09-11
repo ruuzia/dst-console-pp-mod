@@ -1,4 +1,4 @@
-CLIENT_VERSION = true
+CLIENT_VERSION = false
 ---@diagnostic disable:lowercase-global
 
 name = "Console++"
@@ -135,5 +135,15 @@ configuration_options = {
         { data = "alternative", description = "Minimal", hover = "Less extreme colours requested" },
     },
     default = "default",
+},
+{
+    name = "autocomplete",
+    label = "Autocomplete Words",
+    hover = "Autocomplete with globals",
+    options = {
+        { data = true, description = "Enabled" },
+        { data = false, description = "Disabled" },
+    },
+    default = true,
 },
 }
