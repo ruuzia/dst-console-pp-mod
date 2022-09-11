@@ -1,7 +1,7 @@
 CLIENT_VERSION = true
 ---@diagnostic disable:lowercase-global
 
-name = "Console++ (redux)"
+name = "Console++"
 author = "Friendly Grass"
 description = [=[
 This clientside mod implements many improvements to the DST command console.
