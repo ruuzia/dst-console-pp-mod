@@ -60,7 +60,7 @@ Hook(TextEdit, "OnRawKey", function(orig, self, key, down)
                 local ptrn = "["..Config.WORDSET.."]*[^"..Config.WORDSET.."]*$"
                 local i = str:sub(1, pos-1):find(ptrn)
                 self:SetString(str:sub(1, i-1) .. str:sub(pos + 1))
-                self.inst.TextEditWidget:SetEditCursorPos(i-0)
+                self.inst.TextEditWidget:SetEditCursorPos(i - 1)
             end
             return true
 
