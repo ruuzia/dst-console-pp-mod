@@ -20,7 +20,6 @@ ConsoleModder = Class(function(self, screen, console_history, localremote_histor
     self.remotetogglehistory     = assert(localremote_history)
     self.current                 = assert(self.console_edit:GetString())
     self.islogshown              = Config.OPENLOGWITHCONSOLE or TheFrontEnd.consoletext.shown
-    --self.undo = nil
 
     self.buttons = {}
 
@@ -52,13 +51,6 @@ function ConsoleModder:InitiateHookers()
     local _OnRawKey = self.console_edit.OnRawKey
     self.console_edit.OnRawKey = function(s, ...)
         return self:VerifyEditOnRawKey(...) or _OnRawKey(s, ...)
-    end
-
-    local _ValidateChar = self.console_edit.ValidateChar
-    self.console_edit.ValidateChar = function(s, ...)
-        local continue, valid = self:VerifyValidateChar(...)
-        if continue then return _ValidateChar(s, ...)
-        else return valid end
     end
 
     AssertDefinitionSource(self.screen, "OnRawKeyHandler", "scripts/screens/consolescreen.lua")
@@ -128,7 +120,7 @@ function ConsoleModder:VerifyOnTextEntered()
     -- And clears the console
     elseif Config.KEEPCONSOLEOPEN then
         self:Run()
-        self.undo = self.console_edit:GetString()
+        self.redo = self.console_edit:GetString()
         self.console_edit:SetString("")
         return true
     else
@@ -211,30 +203,49 @@ end
 
 local Menu = require "widgets/menu"
 local TEMPLATES = require "widgets/redux/templates"
+local TextButton = require "widgets/textbutton"
+
+local function logButton(onclick, label, color)
+    local btn = TextButton(label)
+    btn:SetOnClick(onclick)
+    btn:SetText(label)
+    btn:SetTextColour(color)
+    --btn:SetTextFocusColour(G.UICOLOURS.GOLD)
+    btn:SetTextFocusColour(color)
+    btn:SetFont(G.NEWFONT_OUTLINE)
+    btn.scale = 1.0
+    btn:SetOnGainFocus(function()
+        btn:SetScale(btn.scale + .10)
+    end)
+    btn:SetOnLoseFocus(function()
+        btn:SetScale(btn.scale)
+    end)
+    btn:SetScale(btn.scale)
+    return btn
+end
 
 local function make_log_switch_buttons(self)
     -- If no dedicated servers, don't make buttons
     if not TheNet:GetIsClient() and not G.TheNet:GetIsHosting() then return end
 
-    local x = -490
+    local x = -500
     local y = 210
-    local sz = {100, 50}
     do
-        local btn = self.staticroot:AddChild(TEMPLATES.StandardButton(function ()
+        local btn = self.staticroot:AddChild(logButton(function ()
             self.scrollable_log.history = Logs.client
             self.scrollable_log:RefreshWidgets(true)
-            self.scrollable_log:SetTextColour(1, 1, 1, 1)
+            self.scrollable_log:SetTextColour(unpack(G.PORTAL_TEXT_COLOUR))
 
             self.console_edit:SetEditing(true)
             return true
-        end, "Client", sz))
+        end, "Client", G.PORTAL_TEXT_COLOUR))
         table.insert(self.buttons, btn)
         self.buttons["Client"] = btn
         btn:SetPosition(x, y)
     end
 
     for i, shard in ipairs {"Master", "Caves"} do
-        local btn = self.staticroot:AddChild(TEMPLATES.StandardButton(function ()
+        local btn = self.staticroot:AddChild(logButton(function ()
             Logs:UpdateClusterLog(shard, function()
                 self.scrollable_log:RefreshWidgets(true)
             end)
@@ -243,12 +254,10 @@ local function make_log_switch_buttons(self)
 
             self.console_edit:SetEditing(true)
             return true
-        end, shard, sz))
+        end, shard, Config.SHARD_LOG_COLOURS[shard]))
         btn:SetPosition(x + i * 100, y)
         table.insert(self.buttons, btn)
         self.buttons[shard] = btn
-        btn:SetTextColour(Config.SHARD_LOG_COLOURS[shard])
-        btn:SetTextFocusColour(Config.SHARD_LOG_COLOURS[shard])
     end
 end
 
@@ -331,25 +340,6 @@ function ConsoleModder:PostInit()
     self.console_edit:SetPassControlToScreen(G.CONTROL_SCROLLFWD, true)
 end
 
--- Produce bad input on some keybinds
-local WINDOWS_FUNKY_INPUTS = {[3] = true, [12] = true, [25] = true, [26] = true}
-
-function ConsoleModder:VerifyValidateChar(c)
-    local continue = false
-    local valid = true
-    if WINDOWS_FUNKY_INPUTS[c:byte()] then
-        valid = false
-    -- If Ctrl+Enter, then we don't want to input a newline!
-    -- But we still want a new line when pasting
-    elseif c == '\n' and (not TheInput:IsKeyDown(G.KEY_CTRL) or self.console_edit.pasting) then
-        valid = true
-    else
-        continue = true
-    end
-
-    return continue, valid
-end
-
 function ConsoleModder:VerifyEditOnRawKey(key, down)
     local ctrl_down = TheInput:IsKeyDown(G.KEY_CTRL)
     local contents = self.console_edit:GetString()
@@ -385,21 +375,7 @@ function ConsoleModder:VerifyEditOnRawKey(key, down)
             end
             return true
         end
-
-    elseif ctrl_down and key == KEY_Z then
-        if contents ~= "" then
-            self.console_edit:SetString("")
-            self.undo = contents
-        end
-        return true
-
-    elseif ctrl_down and key == KEY_Y then
-        if self.undo then
-            self.console_edit:SetString(self.undo)
-            self.undo = nil
-        end
-        return true
-    end
+   end
 
     self.screen.inst:DoTaskInTime(0, function() self:AdjustLabelHeight() end)
 end

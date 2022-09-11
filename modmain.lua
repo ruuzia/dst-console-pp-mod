@@ -39,23 +39,52 @@ modimport "main/reload"
 
 modimport "main/util"
 
----@param reveal boolean
-function G.c_revealmap(reveal)
-    if G.TheWorld == nil or G.TheWorld.ismastersim == false or G.ThePlayer == nil then
-        print("c_revealmap called in bad state")
-        return
+local revealmap_task
+local function unreveal()
+    if revealmap_task then
+        revealmap_task:Cancel()
+        revealmap_task = nil
     end
-    if reveal == false then return G.MapHideAll() end
+    G.MapHideAll()
+end
+AddClientModRPCHandler(RPC_NAMESPACE, "UnrevealMap", unreveal)
 
-    local MapExplorer = G.ThePlayer.player_classified.MapExplorer
-    local RevealArea = MapExplorer.RevealArea
-    local size = G.TheWorld.Map:GetSize() * 2
-    for x = -size, size, 35 do
-        for y = -size, size, 35 do
-            RevealArea(MapExplorer, x, 0, y)
+function G.c_revealmap(reveal)
+    if reveal == nil then reveal = true end
+    if not G.TheWorld then
+        print("c_revealmap called in bad state")
+    elseif not G.TheWorld.ismastersim then
+        if reveal then
+            G.c_remote("c_revealmap()")
+        else
+            unreveal()
+        end
+    else
+        if not reveal then
+            if IS_DEDICATED then SendModRPCToClient(GetClientModRPC(RPC_NAMESPACE, "UnrevealMap"), nil)
+            else unreveal()
+            end
+        else
+            G.TheWorld.minimap.MiniMap:ShowArea(0,0,0,10000)
+            local MapExplorer = G.ThePlayer.player_classified.MapExplorer
+            local RevealArea = MapExplorer.RevealArea
+            local size_x, size_y = G.TheWorld.Map:GetSize()
+            size_x = size_x * 2
+            size_y = size_y * 2
+            revealmap_task = G.TheWorld:DoStaticPeriodicTask(0, coroutine.wrap(function()
+                for x = -size_x, size_x, 35 do
+                    for y = -size_y, size_y, 35 do
+                        RevealArea(MapExplorer, x, 0, y)
+                    end
+                    coroutine.yield()
+                end
+                revealmap_task:Cancel()
+                revealmap_task = nil
+            end))
         end
     end
 end
+--]]
 
 local ModConfigurationScreen = require "screens/redux/modconfigurationscreen"
 function G.c_config()
@@ -87,6 +116,7 @@ AssertDefinitionSource(G, "ExecuteConsoleCommand", "scripts/mainfunctions.lua")
 ---@param z number
 function G.ExecuteConsoleCommand(fnstr, guid, x, z)
     local saved_ThePlayer = G.ThePlayer
+
     if guid then G.ThePlayer = Ents[guid] end
     TheInput.overridepos = x ~= nil and z ~= nil and Vector3(x, 0, z) or nil
 

@@ -54,10 +54,10 @@ local function findtable(str)
     return indices, expressionstart
 end
 
-local function getpossiblekeys(indices)
+local function getpossiblekeys(indices, theplayer)
     -- Temp inject "ThePlayer" into console
     local saved_ThePlayer = G.ThePlayer
-    G.ThePlayer = player
+    G.ThePlayer = theplayer
 
     local t = rawglobal
     for i = #indices, 1, -1 do
@@ -70,8 +70,6 @@ local function getpossiblekeys(indices)
         end
         if not isindexable(t) then return end
     end
-    -- Restore
-    G.ThePlayer = saved_ThePlayer
 
     local keys = {}
     local onlyfuncs = indices[0].indexer == ":"
@@ -82,7 +80,7 @@ local function getpossiblekeys(indices)
             for k,v in pairs(tbl) do
                 if type(k) == "string"
                     and (not onlyfuncs or iscallable(v))    -- If `:`, value must be callable
-                    and (not prevtbl or prevtbl[k] == nil)  -- Key shouldn't be a duplicate
+                    and (not prevtbl or rawget(prevtbl, k) == nil)  -- Key shouldn't be a duplicate
                 then
                     table.insert(keys, k)
                 end
@@ -90,6 +88,9 @@ local function getpossiblekeys(indices)
             prevtbl = tbl
         end
     end
+
+    -- Restore
+    G.ThePlayer = saved_ThePlayer
 
     if #keys == 0 then return end
 
@@ -140,7 +141,7 @@ end
 
 AddModRPCHandler(RPC_NAMESPACE, "RequestCompletions", function(player, str)
     local indices, exprstart = findtable(str)
-    local matches = getpossiblekeys(indices)
+    local matches = getpossiblekeys(indices, player)
     if not matches then return end
     SendModRPCToClient(GetClientModRPC(RPC_NAMESPACE, "Completions"), player.userid, str, exprstart, table.concat(matches, '\n'))
 end)
@@ -148,7 +149,7 @@ end)
 AddModRPCHandler(RPC_NAMESPACE, "RequestGlobalCompletions", function(player, str)
     local start = os.clock()
     local search_string = str:match("[%w_]+$")
-    local matches = getpossiblekeys({ [0] = { identifier = search_string }, { identifier = "_G" } })
+    local matches = getpossiblekeys({ [0] = { identifier = search_string }, { identifier = "_G" } }, player)
     if matches then
         SendModRPCToClient(GetClientModRPC(RPC_NAMESPACE, "Completions"),
                            player.userid,
@@ -224,7 +225,7 @@ local function match_comment(str, i)
     if longcomment then
         return match_long_string_literal(str, i, longcomment)
     else
-        for i = 1, #str do
+        for i = i, #str do
             if str:sub(i, i) == '\n' then return i end
         end
     end
@@ -268,7 +269,7 @@ function TryComplete(prediction_widget, text, cursor_pos, remote_execute)
     if indexer == '.' or indexer == ':' then
         if running_in_client then
             local indices, exprstart = findtable(str)
-            local matches = getpossiblekeys(indices)
+            local matches = getpossiblekeys(indices, G.ThePlayer)
             if not matches then
                 wp:Clear()
                 return true
@@ -281,7 +282,7 @@ function TryComplete(prediction_widget, text, cursor_pos, remote_execute)
         end
 
     elseif search_start <= pos then
-        local search_string = text:sub(search_start)
+        local search_string = str:sub(search_start)
 
         if tonumber(search_string:sub(1, 1)) or ignored_searches[search_string] then
             wp:Clear()
@@ -292,7 +293,7 @@ function TryComplete(prediction_widget, text, cursor_pos, remote_execute)
         end
 
         if running_in_client then
-            local matches = getpossiblekeys({ [0] = { identifier = search_string }, { identifier = "_G" } })
+            local matches = getpossiblekeys({ [0] = { identifier = search_string }, { identifier = "_G" } }, G.ThePlayer)
             if not matches then
                 wp:Clear()
                 return true

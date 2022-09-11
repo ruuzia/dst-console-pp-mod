@@ -1,7 +1,7 @@
-CLIENT_VERSION = false
+CLIENT_VERSION = true
 ---@diagnostic disable:lowercase-global
 
-name = "Console++"
+name = "Console++ (redux)"
 author = "Friendly Grass"
 description = [=[
 This clientside mod implements many improvements to the DST command console.
@@ -68,6 +68,17 @@ configuration_options = {
 },
 
 {
+    name = "entercomplete",
+    label = "Complete with Enter",
+    hover = "Accept completion with Enter",
+    options = {
+        { data = true, description = "Yes" },
+        { data = false, description = "No" },
+    },
+    default = true,
+},
+
+{
     --GetModConfigData("wordset")
     name = "wordset",
     label = "Word Characters for Ctrl+Backspace",
@@ -116,25 +127,13 @@ configuration_options = {
 },
 
 {
-    name = "casesensitive",
-    label = "Case Sensitive Completions",
-    hover = "Case sensitivity of dynamic autocompletions when indexing with '.' or ':'",
-    options = {
-        { data = true, description = "Case Sensitive" },
-        { data = false, description = "Case Insensitive" },
-    },
-    default = true,
-},
-
-{
     name = "logtheme",
     label = "Shard Log Colours",
     hover = "Colours of Master and Caves logs",
     options = {
         { data = "default", description = "Default", hover = "Teal and orange" },
-        { data = "alternative", description = "Alternative", hover = "Less extreme maybe? Shades of purple." },
+        { data = "alternative", description = "Minimal", hover = "Less extreme colours requested" },
     },
     default = "default",
 },
-
 }

@@ -19,7 +19,21 @@ Hook(WordPredictionWidget, "_ctor", function(orig, self, ...)
     orig(self, ...)
     self.tab_complete = false -- I handle tab complete
     -- either enter_complete or tab_complete must be true for WordPredictionWidget:IsMouseOnly
-    self.enter_complete = true
+    self.enter_complete = Config.ENTERCOMPLETE
+    function self:IsMouseOnly() return not Config.ENTERCOMPLETE and not Config.TABCOMPLETE end
+end)
+
+Hook(TextEdit, "_ctor", function(orig, self, ...)
+    -- Windows does funky
+    self:SetInvalidCharacterFilter(string.char(3, 12, 25, 26))
+    orig(self, ...)
+end)
+
+local WINDOWS_FUNKY_INPUTS = {[3] = true, [12] = true, [8] = true, [25] = true, [26] = true}
+Hook(TextEdit, "ValidateChar", function(orig, self, ch)
+    if TheInput:IsKeyDown(KEY_CTRL) and not self.pasting then return false end
+
+    return orig(self, ch)
 end)
 
 -- Changes for ALL textedits - not just console edit
@@ -31,11 +45,34 @@ Hook(TextEdit, "OnRawKey", function(orig, self, key, down)
     if down then
         if (key == KEY_BACKSPACE or key == KEY_DELETE) and TheInput:IsKeyDown(KEY_LSUPER) then
             local str = self:GetString()
+            self.cpm_undo = str
             local pos = self.inst.TextEditWidget:GetEditCursorPos()
             local i = StrGetLineStart(str, pos)
             self:SetString(str:sub(1, i-1) .. str:sub(pos+1))
             self.inst.TextEditWidget:SetEditCursorPos(i-1)
             return true
+
+        elseif (key == KEY_BACKSPACE or key == KEY_W) and ctrl_down then
+            local str = self:GetString()
+            local pos = self.inst.TextEditWidget:GetEditCursorPos()
+            self.cpm_undo = str
+            if pos > 0 then
+                local ptrn = "["..Config.WORDSET.."]*[^"..Config.WORDSET.."]*$"
+                local i = str:sub(1, pos-1):find(ptrn)
+                self:SetString(str:sub(1, i-1) .. str:sub(pos + 1))
+                self.inst.TextEditWidget:SetEditCursorPos(i-0)
+            end
+            return true
+
+        elseif key == KEY_C and ctrl_down then
+            TheSim:SetPersistentString(PSEUDO_CLIPBOARD_FILE, '\n'..self:GetString(), false,
+            function (succ)
+                if succ then
+                    print("Console contents saved to "..PSEUDO_CLIPBOARD_FILE.."!")
+                else
+                    print("Erorr: Unable to write console contents to "..PSEUDO_CLIPBOARD_FILE"..!")
+                end
+            end)
 
         elseif key == G.KEY_TAB then
             if Config.TABCOMPLETE and active_prediction_btn then
@@ -56,6 +93,46 @@ Hook(TextEdit, "OnRawKey", function(orig, self, key, down)
                     self.inst.TextEditWidget:OnTextInput(' ')
                 end
             end
+          
+        elseif key == KEY_Z and ctrl_down then
+            local contents = self:GetString()
+            if self.cpm_undo then
+                self:SetString(self.cpm_undo)
+                self.cpm_undo = nil
+                self.cpm_redo = contents
+
+            elseif ontents ~= "" then
+                self:SetString("")
+                self.cpm_redo = contents
+            end
+            return true
+
+        elseif key == KEY_Y and ctrl_down then
+            if self.cpm_redo then
+                self:SetString(self.cpm_redo)
+                self.cpm_redo = nil
+            end
+            return true
+
+        elseif key == KEY_LEFT and ctrl_down then
+            local str = self:GetString()
+            local pos = self.inst.TextEditWidget:GetEditCursorPos()
+            if pos == 0 then return false end
+            local ptrn = "["..Config.WORDSET.."]*[^"..Config.WORDSET.."]*$"
+            local i = str:sub(1, pos-1):find(ptrn)
+            self.inst.TextEditWidget:SetEditCursorPos(i-1)
+            ForceFocusTextEditCursor(self)
+            return true
+
+        elseif key == KEY_RIGHT and ctrl_down then
+            local str = self:GetString()
+            local pos = self.inst.TextEditWidget:GetEditCursorPos()
+            local ptrn = "^["..Config.WORDSET.."]*[^"..Config.WORDSET.."]*"
+            local _, i = str:find(ptrn, pos+1)
+            if not i then return false end
+            self.inst.TextEditWidget:SetEditCursorPos(i)
+            ForceFocusTextEditCursor(self)
+            return true
         end
     end
 
@@ -99,73 +176,25 @@ local function onclicked(self, mouse_x, mouse_y)
     return true
 end
 
-do
-    local _OnControl = Impurities:New(TextEdit, "OnControl")
-    function TextEdit:OnControl(control, down)
-        local ctrl_down = TheInput:IsKeyDown(G.KEY_LCTRL) or TheInput:IsKeyDown(G.KEY_RCTRL)
-        if down then
-            -- Why do these all need to be in OnControl, again?
-            --
-            -- TODO: Doesn't work for holding down backspace
-            if (control == G.CONTROL_TOGGLE_DEBUGRENDER) and ctrl_down then
-                local str = self:GetString()
-                local pos = self.inst.TextEditWidget:GetEditCursorPos()
-                if pos > 0 then
-                    local ptrn = "["..Config.WORDSET.."]*[^"..Config.WORDSET.."]*$"
-                    local i = str:sub(1, pos-1):find(ptrn)
-                    -- Somehow another backspace is being triggered???
-                    -- Leave an extra char for it to consume
-                    self:SetString(str:sub(1, i-0) .. str:sub(pos + 1))
-                    self.inst.TextEditWidget:SetEditCursorPos(i-0)
-                end
-                return true
-
-            elseif control == G.CONTROL_FOCUS_LEFT and ctrl_down then
-                ---[[
-                local str = self:GetString()
-                local pos = self.inst.TextEditWidget:GetEditCursorPos()
-                if pos == 0 then return false end
-                local ptrn = "["..Config.WORDSET.."]*[^"..Config.WORDSET.."]*$"
-                local i = str:sub(1, pos-1):find(ptrn)
-                self.inst.TextEditWidget:SetEditCursorPos(i-1)
-                ForceFocusTextEditCursor(self)
-                return true
-                --]]
-
-            elseif control == G.CONTROL_FOCUS_RIGHT and ctrl_down then
-                local str = self:GetString()
-                local pos = self.inst.TextEditWidget:GetEditCursorPos()
-                --if pos == #str then return false end
-                ---[[
-                local ptrn = "^[^"..Config.WORDSET.."]*["..Config.WORDSET.."]*[^"..Config.WORDSET.."]*"
-                local _, i = str:find(ptrn, pos+1)
-                if not i then return false end
-                --]]
-                self.inst.TextEditWidget:SetEditCursorPos(i)
-                ForceFocusTextEditCursor(self)
-                return true
-
-            elseif control == G.CONTROL_OPEN_CRAFTING and ctrl_down then -- Ctrl-C
-                TheSim:SetPersistentString(PSEUDO_CLIPBOARD_FILE, '\n'..self:GetString(), false,
-                function (succ)
-                    if succ then
-                        print("Console contents saved to "..file.."!")
-                    else
-                        print("Erorr: Unable to write console contents to "..file"..!")
-                    end
-                end)
-            end
-        else
-            -- This needs to be on mouse up for now because on mouse down, OnControl is called BEFORE OnMouseDown and so we wouldn't even know if the mouse was down yet!
-            if control == G.CONTROL_ACCEPT
-                and TheInput:IsMouseDown(G.MOUSEBUTTON_LEFT)
-                and TheInput:GetHUDEntityUnderMouse() == self.inst
-            then
-                self:SetEditing(true)
-                return onclicked(self, TheFrontEnd.lastx, TheFrontEnd.lasty)
-            end
+Hook(TextEdit, "OnControl", function (orig, self, control, down)
+    -- On mouse down, OnControl is called BEFORE OnMouseDown, and TheInput:IsMouseDown is still false!
+    -- so we don't even know if the mouse was down yet!
+    -- Wrapping in DoTaskInTime so TheInput:IsMouseDown has been registered
+    self.inst:DoTaskInTime(0, function()
+        if down and control == G.CONTROL_ACCEPT
+            and TheInput:IsMouseDown(G.MOUSEBUTTON_LEFT)
+            and TheInput:GetHUDEntityUnderMouse() == self.inst
+        then
+            self:SetEditing(true)
+            onclicked(self, TheFrontEnd.lastx, TheFrontEnd.lasty)
         end
-        return _OnControl(self, control, down)
-    end
-end
+    end)
+    -- Don't close after clicking console
+    if not down
+       and control == G.CONTROL_ACCEPT
+       and TheInput:IsMouseDown(G.MOUSEBUTTON_LEFT)
+       and TheInput:GetHUDEntityUnderMouse() == self.inst
+    then return true end
 
+    return orig(self, control, down)
+end)

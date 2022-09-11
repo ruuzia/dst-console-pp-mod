@@ -48,10 +48,13 @@ function Config:SetConsoleLogTheme(theme)
         }
     elseif theme == "alternative" then
         Config.SHARD_LOG_COLOURS = {
-            Master = {0.50, 0.2, 0.40, 1.0},
-            Caves = G.PLAYERCOLOURS.DARKPLUM,
+            Master = G.UICOLOURS.SILVER,
+            Caves = {1.0, 0.85, 0.85, 1.0},
         }
     end
+end
+function Config:SetEnterComplete(enabled)
+    Config.ENTERCOMPLETE = enabled
 end
 
 function Config:Update()
@@ -59,6 +62,7 @@ function Config:Update()
     Config:SetRemoteToggleKey     (GetModConfigData("remotetoggle", true))
     Config:SetTabSpaces           (GetModConfigData("tabwidth", true))
     Config:SetTabMode             (GetModConfigData("tab", true))
+    Config:SetEnterComplete       (GetModConfigData("entercomplete", true))
     Config:SetScrollSpeed         (GetModConfigData("scrollspeed", true))
     Config:SetAutoManageLog       (GetModConfigData("autoopencloselog", true))
     Config:SetWordSet             (GetModConfigData("wordset", true))
