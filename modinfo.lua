@@ -1,14 +1,13 @@
-CLIENT_VERSION = false
----@diagnostic disable:lowercase-global
+CLIENT_VERSION = true
 
-name = "Console++"
+name = CLIENT_VERSION and "Console++ [client version]" or "Console++ [full version]"
 author = "Friendly Grass"
 description = [=[
-This clientside mod implements many improvements to the DST command console.
+This mod implements many improvements to the DST command console.
 
-󰀔 View Steam description for details 󰀔
+󰀔 Please view the Steam description for details 󰀔
 ]=]
-version = "1.3.10"
+version = "1.4.0"
 dst_compatible = true
 forge_compatible = false
 gorge_compatible = false
