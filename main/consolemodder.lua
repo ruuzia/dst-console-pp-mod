@@ -496,7 +496,8 @@ end
 function ConsoleModder:PostToggleRemoteExecute()
     local label = self.screen.console_remote_execute
     if self.screen.toggle_remote_execute then
-        label:SetColour(Config.SHARD_LOG_COLOURS[getshard()])
+        local shard = getshard()
+        if shard then label:SetColour(Config.SHARD_LOG_COLOURS[shard]) end
     else
         label:SetColour(1,0.7,0.7,1)
     end
