@@ -54,6 +54,8 @@ local function findtable(str)
     return indices, expressionstart
 end
 
+local class_prop__index = Class(nil, nil, {}).__index
+
 local function getpossiblekeys(indices, theplayer)
     -- Temp inject "ThePlayer" into console
     local saved_ThePlayer = G.ThePlayer
@@ -73,19 +75,30 @@ local function getpossiblekeys(indices, theplayer)
 
     local keys = {}
     local onlyfuncs = indices[0].indexer == ":"
-    -- For now I don't handle recursive __index chains
-    local prevtbl
-    for i,tbl in ipairs {t, GetMetaField(t, '__index')} do
-        if type(tbl) == "table" then
-            for k,v in pairs(tbl) do
-                if type(k) == "string"
-                    and (not onlyfuncs or iscallable(v))    -- If `:`, value must be callable
-                    and (not prevtbl or rawget(prevtbl, k) == nil)  -- Key shouldn't be a duplicate
-                then
-                    table.insert(keys, k)
-                end
-            end
-            prevtbl = tbl
+
+    local insertkey = function(k,v)
+        if type(k) == "string"
+            and (not onlyfuncs or iscallable(v))    -- If `:`, value must be callable
+            and k ~= "_"
+        then
+            table.insert(keys, k)
+        end
+    end
+
+    local indexer = GetMetaField(t, '__index')
+
+    for k,v in pairs(t) do insertkey(k,v) end
+
+    if type(indexer) == "table" then
+        for k,v in pairs(indexer) do
+            -- don't want duplicate keys
+            if rawget(t, k) == nil then insertkey(k,v) end
+        end
+
+    elseif type(indexer) == "function" then
+        if indexer == class_prop__index then
+            for k,v in pairs(rawget(t, "_")) do insertkey(k,v) end
+            for k,v in pairs(getmetatable(t)) do insertkey(k,v) end
         end
     end
 
