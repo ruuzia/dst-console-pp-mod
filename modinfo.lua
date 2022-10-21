@@ -1,4 +1,4 @@
-CLIENT_VERSION = true
+CLIENT_VERSION = false
 
 name = CLIENT_VERSION and "Console++ [client version]" or "Console++ [full version]"
 author = "Friendly Grass"
