@@ -87,15 +87,18 @@ local function getpossiblekeys(indices, theplayer)
 
     local indexer = GetMetaField(t, '__index')
 
-    for k,v in pairs(t) do insertkey(k,v) end
+    local is_table = type(t) == "table"
+    if is_table then
+        for k,v in pairs(t) do insertkey(k,v) end
+    end
 
     if type(indexer) == "table" then
         for k,v in pairs(indexer) do
             -- don't want duplicate keys
-            if rawget(t, k) == nil then insertkey(k,v) end
+            if not is_table or rawget(t, k) == nil then insertkey(k,v) end
         end
-
     elseif type(indexer) == "function" then
+        -- special handling for class instances
         if indexer == class_prop__index then
             for k,v in pairs(rawget(t, "_")) do insertkey(k,v) end
             for k,v in pairs(getmetatable(t)) do insertkey(k,v) end
