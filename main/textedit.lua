@@ -139,8 +139,15 @@ Hook(TextEdit, "OnRawKey", function(orig, self, key, down)
     return orig(self, key, down)
 end)
 
--- NOT using OnMouseButton because it registers clicks on children too, and OnControl(CONTROL_ACCEPT) is fired right after it which messes things up
---function TextEdit:OnMouseButton(button, down, mouse_x, mouse_y)
+-- OnControl is triggered right after OnMouseButton
+-- We need a flag to differentiate mouse up from any other (ControlAccept, false)
+local mouse_button_just_triggered_mouse_up
+function TextEdit:OnMouseButton(button, down, mouse_x, mouse_y)
+    if button == G.MOUSEBUTTON_LEFT and TheInput:GetHUDEntityUnderMouse() == self.inst and not down then
+        mouse_button_just_triggered_mouse_up = true
+    end
+end
+
 local function onclicked(self, mouse_x, mouse_y)
     mouse_x = mouse_x / self:GetScale().x
     mouse_y = mouse_y / self:GetScale().y
@@ -177,24 +184,19 @@ local function onclicked(self, mouse_x, mouse_y)
 end
 
 Hook(TextEdit, "OnControl", function (orig, self, control, down)
-    -- On mouse down, OnControl is called BEFORE OnMouseDown, and TheInput:IsMouseDown is still false!
-    -- so we don't even know if the mouse was down yet!
-    -- Wrapping in DoTaskInTime so TheInput:IsMouseDown has been registered
-    self.inst:DoTaskInTime(0, function()
-        if down and control == G.CONTROL_ACCEPT
-            and TheInput:IsMouseDown(G.MOUSEBUTTON_LEFT)
-            and TheInput:GetHUDEntityUnderMouse() == self.inst
-        then
-            self:SetEditing(true)
-            onclicked(self, TheFrontEnd.lastx, TheFrontEnd.lasty)
-        end
-    end)
-    -- Don't close after clicking console
-    if not down
-       and control == G.CONTROL_ACCEPT
-       and TheInput:IsMouseDown(G.MOUSEBUTTON_LEFT)
-       and TheInput:GetHUDEntityUnderMouse() == self.inst
-    then return true end
+    if control == G.CONTROL_ACCEPT
+        and TheInput:GetHUDEntityUnderMouse() == self.inst
+        and down
+        and TheInput:IsMouseDown(G.MOUSEBUTTON_LEFT)
+    then
+        self:SetEditing(true)
+        onclicked(self, TheFrontEnd.lastx, TheFrontEnd.lasty)
+        return true
+    end
+    if mouse_button_just_triggered_mouse_up then
+        mouse_button_just_triggered_mouse_up = false
+        return true
+    end
 
     return orig(self, control, down)
 end)
