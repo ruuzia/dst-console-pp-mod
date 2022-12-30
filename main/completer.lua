@@ -163,7 +163,6 @@ AddModRPCHandler(RPC_NAMESPACE, "RequestCompletions", function(player, str)
 end)
 
 AddModRPCHandler(RPC_NAMESPACE, "RequestGlobalCompletions", function(player, str)
-    local start = os.clock()
     local search_string = str:match("[%w_]+$")
     local matches = getpossiblekeys({ [0] = { identifier = search_string }, { identifier = "_G" } }, player)
     if matches then
@@ -211,7 +210,7 @@ do
     end
 end
 
-local function match_string_literal(str, i, delim)
+local function consume_string_literal(str, i, delim)
     assert(str:sub(i, i) == delim)
     repeat
         i = i + 1
@@ -226,20 +225,20 @@ local function match_string_literal(str, i, delim)
     -- String didn't end
 end
 
-local function match_long_string_literal(str, i, delim)
+local function consume_long_string_literal(str, i, delim)
     local _, _end = str:find("%]"..delim.."%]", i)
     return _end
 end
 
-local function long_literal_delim(str, i)
+local function long_string_literal(str, i)
     return str:match("%[(=*)%[", i)
 end
 
-local function match_comment(str, i)
+local function consume_comment(str, i)
     assert(str:sub(i, i+1) == "--")
     i = i + 2
     if longcomment then
-        return match_long_string_literal(str, i, longcomment)
+        return consume_long_string_literal(str, i, longcomment)
     else
         for i = i, #str do
             if str:sub(i, i) == '\n' then return i end
@@ -249,21 +248,22 @@ end
 
 local function is_in_string_or_comment(str)
     local i = 1
-    repeat
+    while i <= #str do
         local c = str:sub(i, i)
         if c == '\'' or c == '\"' then
-            i = match_string_literal(str, i, c)
+            i = consume_string_literal(str, i, c)
         elseif c == '-' then
             if str:sub(i+1, i+1) == '-' then
-                i = match_comment(str, i)
+                i = consume_comment(str, i)
             end
         else
-            local long = long_literal_delim(str, i)
-            if long then i = match_long_string_literal(str, i, long) end
+            local delim = long_string_literal(str, i)
+            if delim then i = consume_long_string_literal(str, i, delim) end
         end
+        -- Was the entire string consumed?
         if not i then return true end
         i = i + 1
-    until i > #str
+    end
     return false
 end
 
