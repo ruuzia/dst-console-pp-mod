@@ -117,6 +117,7 @@ if WICKERBOTTOM_REFRESH_RELEASED then
 
 else
     scroll_left = function (self)
+        if not self.active_prediction_btn then return end
         self.start_index = math.max(1, self.start_index - self.active_prediction_btn)
         build_prediction_buttons(self, self.start_index)
         self.active_prediction_btn = #self.prediction_btns
@@ -124,6 +125,7 @@ else
         update_arrow_texture(self)
     end
     scroll_right = function (self)
+        if not self.active_prediction_btn then return end
         self.start_index = self.start_index + self.active_prediction_btn
         build_prediction_buttons(self, self.start_index)
         self.active_prediction_btn = 1
@@ -187,7 +189,7 @@ function WordPredictionWidget:OnRawKey(key, down)
 		elseif key == KEY_ENTER then
 			return self.enter_complete
 		elseif key == KEY_LEFT and not self:IsMouseOnly() then
-			if down then
+			if down and self.active_prediction_btn then
                 if self.active_prediction_btn > 1 then
                     self.prediction_btns[self.active_prediction_btn - 1]:Select()
                 --- new ---
@@ -198,7 +200,7 @@ function WordPredictionWidget:OnRawKey(key, down)
 			end
 			return true
 		elseif key == KEY_RIGHT and not self:IsMouseOnly() then
-			if down then
+			if down and self.active_prediction_btn then
                 if self.active_prediction_btn < #self.prediction_btns then
                     self.prediction_btns[self.active_prediction_btn + 1]:Select()
                 --- new ---

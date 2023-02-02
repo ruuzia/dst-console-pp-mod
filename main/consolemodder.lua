@@ -290,8 +290,10 @@ function ConsoleModder:PostInit()
         end
     end
 
-
-    TheFrontEnd:HideConsoleLog()
+    -- Someone encountered error here that TheFrontEnd
+    -- Should be impossible, it exists on both client and server
+    -- perhaps it was another mod doing crazy stuff?
+    if TheFrontEnd then TheFrontEnd:HideConsoleLog() end
     --TheFrontEnd:ShowConsoleLog()
     self:BuildStaticRoot()
 
