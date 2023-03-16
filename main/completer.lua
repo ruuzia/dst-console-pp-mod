@@ -19,8 +19,14 @@ local function keymatches_gen(str, pos)
     return str:sub(1, pos):match(indexing_regexp)
 end
 
---bypass strict.lua
-local rawglobal = G.setmetatable({}, {__index=function(_, k) return rawget(G, k) end})
+local function get(t, k) return t[k] end
+-- Currently we call __index metamethods, should we?
+local function safeget(t, k)
+    local ok, v = pcall(get, t, k)
+    if not ok then return nil end
+    return v
+end
+
 local simple_get_display_string = function(word) return word end
 
 local function iscallable(v)
@@ -61,12 +67,12 @@ local function getpossiblekeys(indices, theplayer)
     local saved_ThePlayer = G.ThePlayer
     G.ThePlayer = theplayer
 
-    local t = rawglobal
+    local t = GLOBAL
     for i = #indices, 1, -1 do
         local key = indices[i]
         local prevtbl = t
         -- Next layer in table
-        t = t[key.identifier]
+        t = safeget(t, key.identifier)
         if key.call == "()" and iscallable(t) then
             t = t(key.indexer == ":" and prevtbl or nil)
         end

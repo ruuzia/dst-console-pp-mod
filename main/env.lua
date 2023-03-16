@@ -7,6 +7,7 @@ setmetatable = G.setmetatable
 tonumber     = G.tonumber
 next         = G.next
 rawget       = G.rawget
+pcall       = G.pcall
 select       = G.select
 assert       = G.assert
 setfenv      = G.setfenv
