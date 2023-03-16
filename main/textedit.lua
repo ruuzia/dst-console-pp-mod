@@ -142,7 +142,7 @@ end)
 -- OnControl is triggered right after OnMouseButton
 -- We need a flag to differentiate mouse up from any other (ControlAccept, false)
 local mouse_button_just_triggered_mouse_up
-Hook(TextEdit, "OnMouseButton", function (orig, button, down, mouse_x, mouse_y)
+Hook(TextEdit, "OnMouseButton", function (orig, self, button, down, mouse_x, mouse_y)
     if button == G.MOUSEBUTTON_LEFT and TheInput:GetHUDEntityUnderMouse() == self.inst and not down then
         mouse_button_just_triggered_mouse_up = true
     end
