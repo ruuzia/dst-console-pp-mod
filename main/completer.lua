@@ -37,16 +37,23 @@ local function isindexable(v)
     return type(v) == "table" or type(GetMetaField(v, "__index")) == "table"
 end
 
+local function ValidateIdentifer(word)
+    return word:find("^[%w_][%a_]*$") ~= nil
+end
+
 local function findtable(str)
     local search_start = str:find("[%w_]*$")
     local indices = {}
     -- Zero index is the one we're completing
-    indices[0] = { identifier = str:sub(search_start) }
+    local incomplete_word = str:sub(search_start)
+    if incomplete_word ~= "" and not ValidateIdentifer(incomplete_word) then return end
+    indices[0] = { identifier = incomplete_word }
     local expressionstart
     -- We start at the end and go backwards matching indexing
     for wstart, word, call, indexer in keymatches_gen, str, search_start do
         expressionstart = wstart
         local len = #indices
+        if not ValidateIdentifer(word) then return end
         indices[len+1] = {
             identifier = word,
             call = call,
@@ -56,6 +63,8 @@ local function findtable(str)
         -- Set indexer of previous match
         indices[len].indexer = indexer
     end
+
+    if not expressionstart then return end
 
     return indices, expressionstart
 end
@@ -163,6 +172,7 @@ end
 
 AddModRPCHandler(RPC_NAMESPACE, "RequestCompletions", function(player, str)
     local indices, exprstart = findtable(str)
+    if not indices then return end
     local matches = getpossiblekeys(indices, player)
     if not matches then return end
     SendModRPCToClient(GetClientModRPC(RPC_NAMESPACE, "Completions"), player.userid, str, exprstart, table.concat(matches, '\n'))
@@ -291,12 +301,14 @@ function TryComplete(prediction_widget, text, cursor_pos, remote_execute)
     if indexer == '.' or indexer == ':' then
         if running_in_client then
             local indices, exprstart = findtable(str)
-            local matches = getpossiblekeys(indices, G.ThePlayer)
-            if not matches then
-                wp:Clear()
-                return true
+            if indices then
+                local matches = getpossiblekeys(indices, G.ThePlayer)
+                if not matches then
+                    wp:Clear()
+                    return true
+                end
+                forcewordprediction(wp, str, exprstart, matches)
             end
-            forcewordprediction(wp, str, exprstart, matches)
         else
             set_completion_request_task(function()
                 SendModRPCToServer(GetModRPC(RPC_NAMESPACE, "RequestCompletions"), str)

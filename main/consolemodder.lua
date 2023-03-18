@@ -70,6 +70,11 @@ function ConsoleModder:InitiateHookers()
         return self:VerifyOnTextEntered() or _OnTextEntered(s, ...)
     end
 
+    local _OnTextInput = self.console_edit.OnTextInput
+    self.console_edit.OnTextInput = function(console_edit, text)
+        return self:VerifyOnTextInput(text) or _OnTextInput(console_edit, text)
+    end
+
     local _ToggleRemoteExecute = self.screen.ToggleRemoteExecute
     self.screen.ToggleRemoteExecute = function(...)
         _ToggleRemoteExecute(...)
@@ -128,6 +133,18 @@ function ConsoleModder:VerifyOnTextEntered()
         self.console_edit:SetEditing(false)
         return false
     end
+end
+
+function ConsoleModder:VerifyOnTextInput(text)
+    if text == '\n' then
+        -- This is only for newline in pasted text
+        -- when pressing enter normally we actually it
+        -- in VerifyOnTextEntered
+        modassert(self.console_edit.pasting)
+        self.console_edit.inst.TextEditWidget:OnTextInput('\n')
+        return true
+    end
+    return false
 end
 
 function ConsoleModder:Close()
@@ -321,9 +338,6 @@ function ConsoleModder:PostInit()
     --self.console_edit:AddWordPredictionDictionary {words = words.Get, delim = "Get", num_chars = 0}
     --self.console_edit:AddWordPredictionDictionary {words = words.Set, delim = "Set", num_chars = 0}
 
-    --better implement myself
-    --self.console_edit.allow_newline = true
-
     -- game does this now!
     --self.console_edit.validrawkeys[G.KEY_V] = true
 
@@ -350,7 +364,7 @@ function ConsoleModder:VerifyEditOnRawKey(key, down)
     if key ~= G.KEY_DOWN and key ~= G.KEY_UP then
         self.goalxpos = nil
     end
-    self.screen.inst:DoTaskInTime(0, function() self:AdjustLabelHeight() end)
+
     if not down then return false end
 
     if not Config.REMOTETOGGLEKEYS[key] and ctrl_down then

@@ -1,7 +1,6 @@
 - All text edits:
     - if tabcomplete: Tab should always try completions before inserting spaces
     - if tabnext: Tab and Ctrl+Tab should move back and forth in predictions
-    - if tabnext: Tab and Ctrl+Tab should move back and forth in predictions
     - Click to position cursor
         - support multiline
         - different fonts
@@ -16,6 +15,8 @@
         - Should stay open if Ctrl+Enter
             - Unless keepopen is set - then it's reversed
         - Unless Shift is down, then only just add a new line
+    - Test multiline pasting
+    - Test pasting text with periods and colons
 
 - Console Log:
     - Custom log used when console is open
