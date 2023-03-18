@@ -7,7 +7,7 @@ This mod implements many improvements to the DST command console.
 
 󰀔 Please view the Steam description for details 󰀔
 ]=]
-version = "1.4.4"
+version = "1.4.6"
 dst_compatible = true
 forge_compatible = false
 gorge_compatible = false
