@@ -120,7 +120,7 @@ end
 ---@param expected string
 function AssertDefinitionSource(t, name, expected)
     local info = debug.getinfo(t[name], "S")
-    if info.source == expected or --[[ support reload ]] info.source:find("^"..MODROOT) then return end
+    if info.source == expected or --[[ support reload ]] info.source:sub(1, #MODROOT) == MODROOT then return end
     printf("[%s] ======== WARNING ===============", modname)
     printf("[%s] %q definition expected in file %q, but found in %q. Running with an incompatible mod?", modname, name, expected, info.source)
     printf("[%s] ================================", modname)
