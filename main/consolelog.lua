@@ -12,7 +12,7 @@ local font = G.BODYTEXTFONT
 local scissor_x      = -250
 
 local scissor_y      = -10
-local scissor_width  = 800
+local scissor_width  = 1200
 local scissor_height = 400
 
 local scrolltop = 5
