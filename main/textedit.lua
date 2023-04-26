@@ -191,7 +191,9 @@ Hook(TextEdit, "OnControl", function (orig, self, control, down)
         and TheInput:IsMouseDown(G.MOUSEBUTTON_LEFT)
     then
         self:SetEditing(true)
-        onclicked(self, TheFrontEnd.lastx, TheFrontEnd.lasty)
+        if TheFrontEnd.lastx and TheFrontEnd.lasty then
+            onclicked(self, TheFrontEnd.lastx, TheFrontEnd.lasty)
+        end
         return true
     end
     if mouse_button_just_triggered_mouse_up then
