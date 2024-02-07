@@ -202,10 +202,17 @@ end
 
 ---[[
 function ConsoleModder:PostOnBecomeActive()
-    -- TODO: do we still need this?
-    -- local remote = self.remotetogglehistory[#self.history]
-    -- if remote == nil then remote = true end
-    -- self.screen:ToggleRemoteExecute(remote)
+    -- Behevior: restore remote/local state of last command
+    -- Also: syncs with which shard log is open
+    local history = G.ConsoleScreenSettings:GetConsoleHistory()
+    local historyline = history and history[#history]
+    local remote
+    if historyline == nil then
+        remote = true
+    else
+        remote = historyline.remote
+    end
+    self.screen:ToggleRemoteExecute(historyline.remote or false)
 
     TheFrontEnd.consoletext:Hide()
 
