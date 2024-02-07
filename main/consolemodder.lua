@@ -12,14 +12,15 @@ local Widget = require "widgets/widget"
 -- In beta
 G.global "ConsoleScreenSettings"
 
-ConsoleModder = Class(function(self, screen, console_history, localremote_history)
-    self.screen                  = assert(screen)
-    self.console_edit            = assert(screen.console_edit)
+ConsoleModder = Class(function(self, screen)
+    self.screen = assert(screen)
+    self.console_edit = assert(screen.console_edit)
     self.arrowkey_set_to_history = false
-    self.history                 = assert(console_history)
-    self.remotetogglehistory     = assert(localremote_history)
-    self.current                 = assert(self.console_edit:GetString())
-    self.islogshown              = Config.OPENLOGWITHCONSOLE or TheFrontEnd.consoletext.shown
+
+    -- See ConsoleModder:ScreenOnRawKeyHandler
+    self.unsaved_work = ""
+
+    self.islogshown = Config.OPENLOGWITHCONSOLE or TheFrontEnd.consoletext.shown
 
     self.buttons = {}
 
@@ -54,8 +55,9 @@ function ConsoleModder:InitiateHookers()
     end
 
     AssertDefinitionSource(self.screen, "OnRawKeyHandler", "scripts/screens/consolescreen.lua")
+    local _OnRawKeyHandler = self.screen.OnRawKeyHandler
     self.screen.OnRawKeyHandler = function(_, ...)
-        return self:ScreenOnRawKeyHandler(...)
+        return self:ScreenOnRawKeyHandler(_OnRawKeyHandler, ...)
     end
 
     local _OnControl = self.screen.OnControl
@@ -72,7 +74,16 @@ function ConsoleModder:InitiateHookers()
 
     local _OnTextInput = self.console_edit.OnTextInput
     self.console_edit.OnTextInput = function(console_edit, text)
-        return self:VerifyOnTextInput(text) or _OnTextInput(console_edit, text)
+        local ret = self:VerifyOnTextInput(text) or _OnTextInput(console_edit, text)
+        self:OnTextUpdate()
+        return ret
+    end
+
+    local _OnSetString = self.console_edit.SetString
+    self.console_edit.SetString = function (console_edit, str)
+        local ret = _OnSetString(console_edit, str)
+        self:OnTextUpdate()
+        return ret
     end
 
     local _ToggleRemoteExecute = self.screen.ToggleRemoteExecute
@@ -98,6 +109,12 @@ function ConsoleModder:InitiateHookers()
     self.screen.Close = function()
         return self:Close()
     end
+end
+
+-- Ideally, this is called whenever the console text
+-- changes.
+function ConsoleModder:OnTextUpdate()
+    self:AdjustLabelHeight()
 end
 
 function ConsoleModder:VerifyOnTextEntered()
@@ -185,9 +202,11 @@ end
 
 ---[[
 function ConsoleModder:PostOnBecomeActive()
-    local remote = self.remotetogglehistory[#self.history]
-    if remote == nil then remote = true end
-    self.screen:ToggleRemoteExecute(remote)
+    -- TODO: do we still need this?
+    -- local remote = self.remotetogglehistory[#self.history]
+    -- if remote == nil then remote = true end
+    -- self.screen:ToggleRemoteExecute(remote)
+
     TheFrontEnd.consoletext:Hide()
 
     Impurities:New(TheFrontEnd, "ShowConsoleLog")
@@ -357,6 +376,9 @@ function ConsoleModder:PostInit()
 end
 
 function ConsoleModder:VerifyEditOnRawKey(key, down)
+    -- We'll keep this as a back up
+    self.screen.inst:DoTaskInTime(0, function() self:AdjustLabelHeight() end)
+
     local ctrl_down = TheInput:IsKeyDown(G.KEY_CTRL)
     local contents = self.console_edit:GetString()
     local cursorpos = self.console_edit.inst.TextEditWidget:GetEditCursorPos()
@@ -392,8 +414,6 @@ function ConsoleModder:VerifyEditOnRawKey(key, down)
             return true
         end
    end
-
-    self.screen.inst:DoTaskInTime(0, function() self:AdjustLabelHeight() end)
 end
 
 function ConsoleModder:UpdateGoalXPos()
@@ -419,10 +439,16 @@ end
 
 -- runs after TextEdit:OnRawKey if it didnt return false
 -- so only for some special non-input keys
--- completely overriding because im changing basically everything
-function ConsoleModder:ScreenOnRawKeyHandler(key, down)
+--
+-- The new behavior we're adding:
+-- * With multiline text inputs, use up and down arrow keys to
+--   move between lines.
+-- * Still let up and down arrows move between history
+-- * Don't lose unsaved work just by pressing up arrow
+function ConsoleModder:ScreenOnRawKeyHandler(_OnRawKeyHandler, key, down)
     local pos = self.console_edit.inst.TextEditWidget:GetEditCursorPos()
     local str = self.console_edit:GetString()
+    local history = G.ConsoleScreenSettings:GetConsoleHistory()
 
     if key == G.KEY_UP then
         if down then
@@ -438,27 +464,17 @@ function ConsoleModder:ScreenOnRawKeyHandler(key, down)
                 self:SetToGoalXPos(StrGetLineStart(str, linestart - 2))
                 return true
             end
-        elseif #self.history > 0 and self.arrowkey_set_to_history then
-            self.arrowkey_set_to_history = false
-            self.screen.history_idx = self.screen.history_idx and self.history[self.screen.history_idx] == str
-                                  and self.screen.history_idx or nil
+        elseif self.arrowkey_set_to_history then
+            -- Keep track of "unsaved" code
             if self.screen.history_idx == nil then
-                self.current = str
+                self.unsaved_work = str
             end
-            do
-                local idx = self.screen.history_idx
-                self.screen.history_idx = idx and idx > 1 and idx - 1 or #self.history
-            end
-            -- self:UpdateGoalXPos()
-            self.console_edit:SetString( self.history[ self.screen.history_idx ] )
-            -- self:SetToGoalXPos(StrGetLineStart(self.console_edit:GetString(), #self.console_edit:GetString()))
 
-            if self.remotetogglehistory[self.screen.history_idx] ~= nil then
-                self.screen:ToggleRemoteExecute(self.remotetogglehistory[self.screen.history_idx])
-            end
-            --[[
-            self.screen.console_history:Show(self.history, self.history_idx)
-            --]]
+            -- Let game handle history.
+            -- There was a reason I couldn't do this before,
+            -- but haven't figured it out yet so...
+            self.arrowkey_set_to_history = false
+            _OnRawKeyHandler(self.screen, key, down)
         end
 
     elseif key == G.KEY_DOWN then
@@ -472,25 +488,17 @@ function ConsoleModder:ScreenOnRawKeyHandler(key, down)
                 self:SetToGoalXPos(lineend+2)
                 return true
             end
-        elseif #self.history > 0 and self.screen.history_idx and self.arrowkey_set_to_history then
-            if self.screen.history_idx == #self.history then
-                -- self:UpdateGoalXPos()
-                self.console_edit:SetString(self.current)
-                -- self:SetToGoalXPos(1)
+        elseif self.arrowkey_set_to_history then
+            -- New behavior: we don't want to lose our work.
+            -- So when we press down error at end of history,
+            -- we return to the "unsaved" text input
+            if self.screen.history_idx == #history then
+                self.console_edit:SetString(self.unsaved_work)
                 self.screen.history_idx = nil
-            else
-                self.screen.history_idx = math.min(#self.history, self.screen.history_idx + 1)
-                -- self:UpdateGoalXPos()
-                self.console_edit:SetString(self.history[self.screen.history_idx])
-                -- self:SetToGoalXPos(1)
-
-                if self.remotetogglehistory[self.screen.history_idx] ~= nil then
-                    self.screen:ToggleRemoteExecute(self.remotetogglehistory[self.screen.history_idx])
-                end
-                --[[
-                self.screen.console_history:Show(self.history, self.history_idx)
-                --]]
             end
+
+            -- Let game handle history
+            _OnRawKeyHandler(self.screen, key, down)
         end
 
     elseif not down and Config.REMOTETOGGLEKEYS[key] then
@@ -510,6 +518,11 @@ function ConsoleModder:VerifyOnControl(control, down)
 end
 
 function ConsoleModder:PostToggleRemoteExecute()
+    -- Now remote toggle is sometimes forced even when there is no remote,
+    -- so we add our own guard
+    local is_valid_time_to_use_remote = TheNet:GetIsClient() and TheNet:GetIsServerAdmin()
+    if not is_valid_time_to_use_remote then return end
+
     local label = self.screen.console_remote_execute
     if self.screen.toggle_remote_execute then
         local shard = getshard()
@@ -526,20 +539,15 @@ function ConsoleModder:Run()
     G.SuUsedAdd("console_used")
 
     local toggle = self.screen.toggle_remote_execute
-    local valid_to_use_remote = self.screen.console_remote_execute.shown
-	if fnstr ~= "" and fnstr ~= self.history[#self.history] or valid_to_use_remote and toggle ~= self.remotetogglehistory[#self.history] then
-        table.insert(self.history, fnstr)
-        if valid_to_use_remote then
-            -- Only save remote togle history if remote was an *option*
-            self.remotetogglehistory[#self.history] = toggle
-        end
-        if G.ConsoleScreenSettings then
-            G.ConsoleScreenSettings:AddLastExecutedCommand(fnstr, toggle)
-            G.ConsoleScreenSettings:Save()
-        end
+
+    -- TODO: don't add repeats like how it worked before?
+	-- if fnstr ~= "" and fnstr ~= self.history[#self.history] or valid_to_use_remote and toggle ~= self.remotetogglehistory[#self.history] then
+	if fnstr ~= "" then
+		G.ConsoleScreenSettings:AddLastExecutedCommand(fnstr, self.screen.toggle_remote_execute)
 	end
 
-	if self.screen.toggle_remote_execute then
+    -- Only remote execute if there is actually a remote to execute
+	if self.screen.toggle_remote_execute and TheNet:GetIsClient() and TheNet:GetIsServerAdmin() then
         local x, _, z = TheSim:ProjectScreenPos(TheSim:GetPosition())
         if fnstr:byte() == string.byte("=") then
             fnstr = string.format("print(table.inspect((%s), 1))", fnstr:sub(2))

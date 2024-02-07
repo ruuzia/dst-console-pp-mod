@@ -175,5 +175,5 @@ local __ctor = Impurities:New(ConsoleScreen, "_ctor")
 ConsoleScreen._ctor = function(self, ...)
     Config:Update()
     __ctor(self, ...)
-    ConsoleModder(self, G.GetConsoleHistory(), G.GetConsoleLocalRemoteHistory())
+    ConsoleModder(self)
 end
