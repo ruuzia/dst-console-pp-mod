@@ -164,7 +164,8 @@ function CodeMissingClosingStatement(lua)
         ["for"] = 0, ["while"] = 0, ["then"] = 0,
         ["elseif"] = 0
     }
-    for word in encoded:gmatch("%w+") do
+
+    for word in encoded:gmatch("[%w_]+") do
         if stat[word] then
             stat[word] = stat[word] + 1
         end
