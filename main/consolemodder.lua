@@ -414,7 +414,7 @@ function ConsoleModder:VerifyEditOnRawKey(key, down)
         local linestart = StrGetLineStart(contents, cursorpos)
         local chars = contents:sub(linestart, cursorpos)
         if chars:find "^%s+$" then
-            for i = 1, math.min(#chars, 4) do
+            for i = 1, math.min(#chars, Config.TABSPACES) do
                 self.console_edit.inst.TextEditWidget:OnKeyDown(KEY_BACKSPACE)
                 --self.console_edit.inst.TextEditWidget:OnKeyUp(KEY_BACKSPACE)
             end
