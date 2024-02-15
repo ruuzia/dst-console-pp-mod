@@ -1,4 +1,7 @@
-local floor = math.floor
+-- History for scrollable console log(s).
+-- We could have also implemented this as a proper queue, which may have
+-- been a cleaner implementation, but this is fine too.
+
 local LEEWAY_MULT = 1.5
 
 local History = Class(function (self, max)
