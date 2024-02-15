@@ -1,4 +1,22 @@
---local ConsoleScreen = require "screens/consolescreen"
+-- The heart of the Console++ mod.
+-- Modifies the ConsoleScreen to implement a bunch of behaviour.
+-- * Multiline console input
+--   * Growing and shrinking console with number of lines
+--   * Create newline on Shift+Enter
+--   * or in an unfinished Lua block
+--   * Use up and down error keys to move between lines
+-- * Force run on Ctrl+Enter without closing console
+-- * Multiple shard logs: Client, Master, and Caves
+--   * Switch automatically to relevant log
+--   * Buttons to toggle between logs
+-- * Home goes to beginning of line
+-- * End goes to end of line
+-- * Fake tab support (tab and backspace keys)
+-- * Prevent losing unsaved work when pressing up (to view command history)
+--   or when closing the command window (saves it to history)
+-- * Dynamic word completion
+-- TODO: figure out what this mod does
+
 local G = GLOBAL
 
 local label_height = 50
@@ -9,9 +27,12 @@ local baseypos = 75
 
 local Widget = require "widgets/widget"
 
+local History = require "history"
+
 -- In beta
 G.global "ConsoleScreenSettings"
 
+--- The ConsoleModder class wraps around a ConsoleScreen.
 ConsoleModder = Class(function(self, screen)
     self.screen = assert(screen)
     self.console_edit = assert(screen.console_edit)
@@ -29,7 +50,9 @@ ConsoleModder = Class(function(self, screen)
     self:PostInit()
 end)
 
-function ConsoleModder:AdjustLabelHeight()
+--- Scales the height of the console edit to allow for
+--- multiline input.
+function ConsoleModder:UpdateConsoleSize()
     local _, nlcount = self.console_edit:GetString():gsub('\n', '')
     self.screen.label_height = label_height + fontsize * nlcount
 	self.screen.root:SetPosition(self.screen.root:GetPosition().x, baseypos + (fontsize - 2) * nlcount / 2, 0)
@@ -40,6 +63,7 @@ function ConsoleModder:AdjustLabelHeight()
     end
 end
 
+--- Initiate hookers.
 function ConsoleModder:InitiateHookers()
     --doesn't modify the global environment so automatically works with hot reload
 
@@ -100,11 +124,11 @@ function ConsoleModder:InitiateHookers()
         return _RefreshPredictions(word_predictor, text, cursor_pos)
     end
 
+    -- These ones we're completely overriding
     AssertDefinitionSource(self.screen, "Run", "scripts/screens/consolescreen.lua")
     self.screen.Run = function()
         return self:Run()
     end
-
     AssertDefinitionSource(self.screen, "Close", "scripts/screens/consolescreen.lua")
     self.screen.Close = function()
         return self:Close()
@@ -114,9 +138,11 @@ end
 -- Ideally, this is called whenever the console text
 -- changes.
 function ConsoleModder:OnTextUpdate()
-    self:AdjustLabelHeight()
+    self:UpdateConsoleSize()
 end
 
+--- Called *before* the screen gets the OnTextEntered
+--- @return boolean true to fallback to default OnTextEntered call
 function ConsoleModder:VerifyOnTextEntered()
     self.console_edit:SetEditing(true)
     -- Force run on CTRL+Enter
@@ -135,7 +161,7 @@ function ConsoleModder:VerifyOnTextEntered()
         or CodeMissingClosingStatement(self.console_edit:GetString())
     then
         self.console_edit.inst.TextEditWidget:OnTextInput('\n')
-        self:AdjustLabelHeight()
+        self:UpdateConsoleSize()
         return true
 
     -- KEEPCONSOLEOPEN by default just force runs
@@ -152,6 +178,8 @@ function ConsoleModder:VerifyOnTextEntered()
     end
 end
 
+--- Before any text input for the console edit
+--- @return boolean true to fallback to default OnTextInput
 function ConsoleModder:VerifyOnTextInput(text)
     if text == '\n' then
         -- This is only for newline in pasted text
@@ -164,6 +192,7 @@ function ConsoleModder:VerifyOnTextInput(text)
     return false
 end
 
+--- Replace ConsoleScreen:Close()
 function ConsoleModder:Close()
     -- Undo overrides
     Impurities:Restore(TheFrontEnd, "HideConsoleLog")
@@ -179,6 +208,7 @@ function ConsoleModder:Close()
 end
 
 function ConsoleModder:BuildStaticRoot()
+    -- We need this for some reason
     local staticroot = self.screen:AddChild(Widget(""))
     staticroot:SetScaleMode(G.SCALEMODE_PROPORTIONAL)
     staticroot:SetHAnchor(G.ANCHOR_MIDDLE)
@@ -190,17 +220,24 @@ function ConsoleModder:BuildStaticRoot()
     self.staticroot = staticroot
 end
 
-local History = require "history"
+--- Get the active shard
+---@return string name of the current shard
+local function GetShard()
+    if rawget(G, "TheWorld") == nil then
+        -- We're not in game!
+        return nil
+    end
 
-local function getshard()
     if G.TheWorld:HasTag "forest" then
         return "Master"
     elseif G.TheWorld:HasTag "cave" then
         return "Caves"
     end
+
+    -- return nil
 end
 
----[[
+--- We do out initialization here
 function ConsoleModder:PostOnBecomeActive()
     -- Behevior: restore remote/local state of last command
     -- Also: syncs with which shard log is open
@@ -234,7 +271,7 @@ function ConsoleModder:PostOnBecomeActive()
     if self.islogshown then TheFrontEnd:ShowConsoleLog() else TheFrontEnd:HideConsoleLog() end
 
     if self.screen.toggle_remote_execute then
-        local shard = getshard()
+        local shard = GetShard()
         if shard then
             self.buttons[shard].onclick()
         end
@@ -242,12 +279,11 @@ function ConsoleModder:PostOnBecomeActive()
 
 end
 
---]]
-
 local Menu = require "widgets/menu"
 local TEMPLATES = require "widgets/redux/templates"
 local TextButton = require "widgets/textbutton"
 
+-- Log buttons to toggle between Client, Server, and Caves
 local function logButton(onclick, label, color)
     local btn = TextButton(label)
     btn:SetOnClick(onclick)
@@ -384,7 +420,7 @@ end
 
 function ConsoleModder:VerifyEditOnRawKey(key, down)
     -- We'll keep this as a back up
-    self.screen.inst:DoTaskInTime(0, function() self:AdjustLabelHeight() end)
+    self.screen.inst:DoTaskInTime(0, function() self:UpdateConsoleSize() end)
 
     local ctrl_down = TheInput:IsKeyDown(G.KEY_CTRL)
     local contents = self.console_edit:GetString()
@@ -532,7 +568,7 @@ function ConsoleModder:PostToggleRemoteExecute()
 
     local label = self.screen.console_remote_execute
     if self.screen.toggle_remote_execute then
-        local shard = getshard()
+        local shard = GetShard()
         if shard then label:SetColour(Config.SHARD_LOG_COLOURS[shard]) end
     else
         label:SetColour(1,0.7,0.7,1)
@@ -547,8 +583,6 @@ function ConsoleModder:Run()
 
     local toggle = self.screen.toggle_remote_execute
 
-    -- TODO: don't add repeats like how it worked before?
-	-- if fnstr ~= "" and fnstr ~= self.history[#self.history] or valid_to_use_remote and toggle ~= self.remotetogglehistory[#self.history] then
 	if fnstr ~= "" then
 		G.ConsoleScreenSettings:AddLastExecutedCommand(fnstr, self.screen.toggle_remote_execute)
 	end
@@ -562,7 +596,7 @@ function ConsoleModder:Run()
 		TheNet:SendRemoteExecute(fnstr, x, z)
 
         self.screen.inst:DoTaskInTime(0, function ()
-            local shard = getshard()
+            local shard = GetShard()
             if shard and self.buttons[shard] then
                 self.buttons[shard].onclick()
             end
