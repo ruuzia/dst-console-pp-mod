@@ -177,3 +177,5 @@ ConsoleScreen._ctor = function(self, ...)
     __ctor(self, ...)
     ConsoleModder(self)
 end
+
+modimport "main/tester"
