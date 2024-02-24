@@ -93,8 +93,13 @@ Hook(TextEdit, "OnRawKey", function(orig, self, key, down)
                     self.inst.TextEditWidget:OnTextInput(' ')
                 end
             end
-          
+
         elseif key == KEY_Z and ctrl_down then
+            -- Weird feature: using ctrl-z and ctrl-y for going back and restoring state
+            -- in an unintuitive and hardly-implemented way..
+            -- TODO: deprecate
+            -- I'd prefer either complete history or nothing
+
             local contents = self:GetString()
             if self.cpm_undo then
                 self:SetString(self.cpm_undo)
