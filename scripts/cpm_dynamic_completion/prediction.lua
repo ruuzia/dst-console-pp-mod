@@ -2,6 +2,9 @@ setfenv(1, ConsolePP.env)
 local G = GLOBAL
 local _M = {}
 
+-- TODO: proper Lua lexer
+-- for now we have this gobbledygook
+--
 local indexing_regexp = '()'       --> start index
                      .. '([%w_]+)' --> word
                      .. '%s*'

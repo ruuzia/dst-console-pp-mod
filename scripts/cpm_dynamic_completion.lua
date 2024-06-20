@@ -1,4 +1,4 @@
--- Dynamically complete variable and field names.
+-- Dynamically complete global variables and/or field names.
 --
 setfenv(1, ConsolePP.env)
 local G = GLOBAL
