@@ -77,9 +77,10 @@ Hook(TextEdit, "OnControl", function (orig, self, control, down)
     return orig(self, control, down)
 end)
 
+
 return {
     tests = {
-        ["click to position console log"] = function ()
+        ["click to position console edit"] = function ()
             local text = "Hello, World!"
             local x, y = 360, 130
 
