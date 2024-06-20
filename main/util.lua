@@ -11,6 +11,12 @@ function Hook(loc, idx, wrapper)
   end
 end
 
+function Require(modname)
+    -- Force reload
+    Impurities:Package(modname)
+    return require(modname)
+end
+
 ---@param fn function
 ---@param overrides table<string, any>
 function ModFenv(fn, overrides)

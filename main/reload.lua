@@ -10,6 +10,8 @@ Impurities = {}
 -- If the modified table no longer exists, we can freely forget it
 Impurities.items = {}
 
+Impurities.requires = {}
+
 ---@param loc table
 ---@param key any index of loc
 ---@param origin any? the original value (default to current)
@@ -37,6 +39,15 @@ function Impurities:Reset()
     end
     -- Leave behind trash for garbage collector and start anew
     self.items = {}
+
+    -- Unload packages so next require reloads them
+    for _,name in ipairs(self.requires) do
+        G.package.loaded[name] = nil
+    end
+end
+
+function Impurities:Package(name)
+    table.insert(self.requires, name)
 end
 
 local function remove_mod_rpc_namespace(namespace)

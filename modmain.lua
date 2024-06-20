@@ -170,6 +170,29 @@ modimport "main/consolemodder"
 modimport "main/textedit"
 modimport "main/consolelog"
 modimport "main/wordpredictionwidget"
+modimport "main/tester"
+
+local FEATURES = {
+    "cpm_textedit_click_to_position",
+}
+
+local modules = {}
+
+for _, module in ipairs(FEATURES) do
+    Log("Loading feature module %q", module)
+    local ok, result = pcall(Require, module)
+    if not ok then
+        print("[ConsolePP] Failed to load module: "..module)
+        moderror(result)
+    else
+        print("Loaded!")
+        modules[module] = result
+    end
+end
+
+function GetFeatureModules()
+    return modules
+end
 
 local __ctor = Impurities:New(ConsoleScreen, "_ctor")
 ConsoleScreen._ctor = function(self, ...)
@@ -177,5 +200,3 @@ ConsoleScreen._ctor = function(self, ...)
     __ctor(self, ...)
     ConsoleModder(self)
 end
-
-modimport "main/tester"
