@@ -221,10 +221,14 @@ function ConsoleModder:BuildStaticRoot()
 end
 
 --- Get the active shard
----@return string name of the current shard
+---@return string|nil name of the current shard
 local function GetShard()
     if rawget(G, "TheWorld") == nil then
         -- We're not in game!
+        return nil
+    end
+    if not TheNet:GetIsClient() or not TheNet:GetIsServerAdmin() then
+        -- We're not running a dedicated server
         return nil
     end
 
@@ -249,7 +253,7 @@ function ConsoleModder:PostOnBecomeActive()
     else
         remote = historyline.remote
     end
-    self.screen:ToggleRemoteExecute(historyline.remote or false)
+    self.screen:ToggleRemoteExecute(remote or false)
 
     TheFrontEnd.consoletext:Hide()
 
@@ -270,9 +274,9 @@ function ConsoleModder:PostOnBecomeActive()
 
     if self.islogshown then TheFrontEnd:ShowConsoleLog() else TheFrontEnd:HideConsoleLog() end
 
-    if self.screen.toggle_remote_execute then
+    if self.screen.toggle_remote_execute and TheNet:GetIsClient() and TheNet:GetIsServerAdmin() then
         local shard = GetShard()
-        if shard then
+        if shard and self.buttons[shard] then
             self.buttons[shard].onclick()
         end
     end
