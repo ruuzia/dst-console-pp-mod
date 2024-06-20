@@ -53,17 +53,19 @@ function AssertEq(value, expected)
         ..tostring(value), 2)
 end
 
+Tester = {}
+
 local function _RunTests()
     local count_succeeded = 0
     local count_failed = 0
-    for name, module in pairs(GetFeatureModules()) do
+    for _, module in ipairs(GetFeatureModules()) do
         if not module.tests then
-            Log("WARNING: no tests for module %q", name)
+            Log("WARNING: no tests for module %q", module.name)
         end
-        Log("Running tests for module %q", name)
+        Log("Running tests for module %q", module.name)
         for test_name, fn in pairs(module.tests) do
             local ok = xpcall(fn, function(err)
-                Log("FAIL: %s", tostring(err))
+                Log("FAIL: %s\n%s", tostring(err), debug.traceback(3))
             end)
             if ok then
                 count_succeeded = count_succeeded + 1
@@ -82,17 +84,30 @@ function RunTests()
     G.TheGlobalInstance:DoTaskInTime(0.1, _RunTests)
 end
 
-Tester = {
-    OpenConsole = function ()
-        local ConsoleScreen = require "screens/consolescreen"
-        TheFrontEnd:PushScreen(ConsoleScreen())
-        return TheFrontEnd:GetActiveScreen()
-    end,
-    IsConsoleOpen = function ()
-        local ConsoleScreen = require "screens/consolescreen"
-        return ConsoleScreen.is_instance(TheFrontEnd:GetActiveScreen())
-    end,
-    SendTextInput = function (str)
-        TheFrontEnd:OnTextInput(str)
-    end,
-}
+function Tester.OpenConsole()
+    Tester.CloseConsole()
+    local ConsoleScreen = require "screens/consolescreen"
+    TheFrontEnd:PushScreen(ConsoleScreen())
+    return TheFrontEnd:GetActiveScreen()
+end
+function Tester.CloseConsole()
+    if Tester.IsConsoleOpen() then
+        TheFrontEnd:PopScreen(TheFrontEnd:GetActiveScreen())
+    end
+end
+function Tester.IsConsoleOpen()
+    return TheFrontEnd:GetActiveScreen().name == "ConsoleScreen"
+end
+function Tester.SendTextInput(str)
+    TheFrontEnd:OnTextInput(str)
+end
+function Tester.SendKey(key)
+    TheFrontEnd:OnRawKey(key, true)
+    TheFrontEnd:OnRawKey(key, false)
+end
+function Tester.PressEnter()
+    TheFrontEnd:OnRawKey(KEY_ENTER, true)
+    TheFrontEnd:OnControl(G.CONTROL_ACCEPT, true)
+    TheFrontEnd:OnRawKey(KEY_ENTER, false)
+    TheFrontEnd:OnControl(G.CONTROL_ACCEPT, false)
+end

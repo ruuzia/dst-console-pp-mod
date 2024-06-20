@@ -1,6 +1,7 @@
 -- Dynamically complete variable and field names.
 --
 setfenv(1, ConsolePP.env)
+local G = GLOBAL
 
 local WordPredictor = require "util/wordpredictor"
 
@@ -19,3 +20,20 @@ end)
 
 
 Require "cpm_dynamic_completion.support_completing_in_middle"
+
+return {
+    tests = {
+        ["test global word prediction"] = function ()
+            local screen = Tester.OpenConsole()
+            Tester.SendTextInput("ConsoleP")
+            local prediction_widget = screen.console_edit.prediction_widget
+            Assert(#prediction_widget.prediction_btns > 0)
+            AssertEq(screen.console_edit:GetString(), "ConsoleP")
+            AssertEq(prediction_widget.prediction_btns[1]:GetText(), "ConsolePP")
+            -- Accept completion
+            Tester.PressEnter()
+            AssertEq(screen.console_edit:GetString(), "ConsolePP")
+            AssertEq(#prediction_widget.prediction_btns, 0)
+        end,
+    }
+}

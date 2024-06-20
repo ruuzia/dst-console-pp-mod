@@ -186,7 +186,8 @@ for _, module in ipairs(FEATURES) do
         Log("Failed to load module: %q", module)
         moderror(result)
     else
-        modules[module] = result
+        result.name = module
+        table.insert(modules, result)
     end
 end
 
