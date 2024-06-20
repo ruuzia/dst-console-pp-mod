@@ -165,7 +165,6 @@ AddModRPCHandler(RPC_NAMESPACE, "RequestClusterLog", function(player, shard)
     end)
 end)
 
-modimport "main/completer"
 modimport "main/consolemodder"
 modimport "main/textedit"
 modimport "main/consolelog"
