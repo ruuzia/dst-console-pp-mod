@@ -159,6 +159,7 @@ function Handler.TryComplete(wp, text, cursor_pos, remote_execute)
     local indexer = str:sub(search_start-1, search_start-1)
 
     if indexer == '.' or indexer == ':' then
+        -- Chain index completion (e.g: tree.apple.components.juiceable:Squeez)
         if running_in_client then
             local indices, exprstart = Predictor.FindTable(str)
             if indices then
@@ -176,7 +177,7 @@ function Handler.TryComplete(wp, text, cursor_pos, remote_execute)
         end
 
     elseif search_start <= pos then
-        -- Global
+        -- Global completions
         local search_string = str:sub(search_start)
 
         if tonumber(search_string:sub(1, 1)) or ignored_searches[search_string] then
