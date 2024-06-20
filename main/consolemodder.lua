@@ -15,15 +15,8 @@
 -- * Prevent losing unsaved work when pressing up (to view command history)
 --   or when closing the command window (saves it to history)
 -- * Dynamic word completion
--- TODO: figure out what this mod does
 
 local G = GLOBAL
-
-local label_height = 50
-local fontsize = 30
-local edit_width = 850
-local edit_bg_padding = 50
-local baseypos = 75
 
 local Widget = require "widgets/widget"
 
@@ -49,19 +42,6 @@ ConsoleModder = Class(function(self, screen)
     self:InitiateHookers()
     self:PostInit()
 end)
-
---- Scales the height of the console edit to allow for
---- multiline input.
-function ConsoleModder:UpdateConsoleSize()
-    local _, nlcount = self.console_edit:GetString():gsub('\n', '')
-    self.screen.label_height = label_height + fontsize * nlcount
-	self.screen.root:SetPosition(self.screen.root:GetPosition().x, baseypos + (fontsize - 2) * nlcount / 2, 0)
-    local wcurr, hcurr = self.screen.edit_bg:GetSize()
-    if wcurr and hcurr and hcurr ~= self.screen.label_height then
-        self.screen.edit_bg:ScaleToSize( self.screen.edit_width + edit_bg_padding, self.screen.label_height )
-        self.console_edit:SetRegionSize( self.screen.edit_width, self.screen.label_height )
-    end
-end
 
 --- Initiate hookers.
 function ConsoleModder:InitiateHookers()
@@ -96,19 +76,11 @@ function ConsoleModder:InitiateHookers()
         return self:VerifyOnTextEntered() or _OnTextEntered(s, ...)
     end
 
-    local _OnTextInput = self.console_edit.OnTextInput
-    self.console_edit.OnTextInput = function(console_edit, text)
-        local ret = self:VerifyOnTextInput(text) or _OnTextInput(console_edit, text)
-        self:OnTextUpdate()
-        return ret
-    end
-
-    local _OnSetString = self.console_edit.SetString
-    self.console_edit.SetString = function (console_edit, str)
-        local ret = _OnSetString(console_edit, str)
-        self:OnTextUpdate()
-        return ret
-    end
+    -- local _OnTextInput = self.console_edit.OnTextInput
+    -- self.console_edit.OnTextInput = function(console_edit, text)
+    --     local ret = self:VerifyOnTextInput(text) or _OnTextInput(console_edit, text)
+    --     return ret
+    -- end
 
     local _ToggleRemoteExecute = self.screen.ToggleRemoteExecute
     self.screen.ToggleRemoteExecute = function(...)
@@ -129,12 +101,6 @@ function ConsoleModder:InitiateHookers()
     end
 end
 
--- Ideally, this is called whenever the console text
--- changes.
-function ConsoleModder:OnTextUpdate()
-    self:UpdateConsoleSize()
-end
-
 --- Called *before* the screen gets the OnTextEntered
 --- @return boolean true to fallback to default OnTextEntered call
 function ConsoleModder:VerifyOnTextEntered()
@@ -149,15 +115,6 @@ function ConsoleModder:VerifyOnTextEntered()
         else
             return true
         end
-    -- Create newline on Shift+Enter
-    -- or in unfinished block
-    elseif TheInput:IsKeyDown(G.KEY_SHIFT)
-        or CodeMissingClosingStatement(self.console_edit:GetString())
-    then
-        self.console_edit.inst.TextEditWidget:OnTextInput('\n')
-        self:UpdateConsoleSize()
-        return true
-
     -- KEEPCONSOLEOPEN by default just force runs
     -- And clears the console
     elseif Config.KEEPCONSOLEOPEN then
@@ -172,21 +129,21 @@ function ConsoleModder:VerifyOnTextEntered()
     end
 end
 
---- Before any text input for the console edit
---- @return boolean true to fallback to default OnTextInput
-function ConsoleModder:VerifyOnTextInput(text)
-    if text == '\n' then
-        -- This is only for newline in pasted text
-        -- when pressing enter normally we actually it
-        -- in VerifyOnTextEntered
-        modassert(self.console_edit.pasting)
-        self.console_edit.inst.TextEditWidget:OnTextInput('\n')
-        return true
-    end
-    return false
-end
+-- --- Before any text input for the console edit
+-- --- @return boolean true to fallback to default OnTextInput
+-- function ConsoleModder:VerifyOnTextInput(text)
+--     if text == '\n' then
+--         -- This is only for newline in pasted text
+--         -- when pressing enter normally we actually it
+--         -- in VerifyOnTextEntered
+--         modassert(self.console_edit.pasting)
+--         self.console_edit.inst.TextEditWidget:OnTextInput('\n')
+--         return true
+--     end
+--     return false
+-- end
 
---- Replace ConsoleScreen:Close()
+-- Replace ConsoleScreen:Close()
 function ConsoleModder:Close()
     -- Undo overrides
     Impurities:Restore(TheFrontEnd, "HideConsoleLog")
@@ -401,24 +358,13 @@ function ConsoleModder:PostInit()
     -- game does this now!
     --self.console_edit.validrawkeys[G.KEY_V] = true
 
-    self.screen.edit_bg:SetTexture("images/textbox_long_thinborder.xml", "textbox_long_thinborder.tex" )
-	self.screen.root:SetPosition(0, baseypos, 0)
-    self.screen.label_height = label_height
-    self.screen.edit_width = edit_width
-	self.screen.edit_bg:ScaleToSize(edit_bg_padding + self.screen.edit_width, label_height )
-	self.screen.edit_bg:SetPosition( 0, 10 )
-	self.screen.console_remote_execute:SetPosition( -self.screen.edit_width*0.5 -200*0.5 - 35, 0 )
-    self.console_edit:SetRegionSize(self.screen.edit_width, self.screen.label_height)
-
-    self.console_edit:SetVAlign(G.ANCHOR_TOP)
-
     self.console_edit:SetPassControlToScreen(G.CONTROL_SCROLLBACK, true)
     self.console_edit:SetPassControlToScreen(G.CONTROL_SCROLLFWD, true)
 end
 
 function ConsoleModder:VerifyEditOnRawKey(key, down)
     -- We'll keep this as a back up
-    self.screen.inst:DoTaskInTime(0, function() self:UpdateConsoleSize() end)
+    -- self.screen.inst:DoTaskInTime(0, function() self:UpdateConsoleSize() end)
 
     local ctrl_down = TheInput:IsKeyDown(G.KEY_CTRL)
     local contents = self.console_edit:GetString()

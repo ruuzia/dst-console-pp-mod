@@ -173,7 +173,8 @@ modimport "main/tester"
 
 local FEATURES = {
     "cpm_textedit_click_to_position",
-    "cpm_dynamic_completion"
+    "cpm_dynamic_completion",
+    "cpm_multiline_console_input",
 }
 
 local modules = {}
@@ -185,6 +186,7 @@ for _, module in ipairs(FEATURES) do
         Log("Failed to load module: %q", module)
         moderror(result)
     else
+        result = result or {}
         result.name = module
         table.insert(modules, result)
     end
