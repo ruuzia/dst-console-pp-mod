@@ -118,12 +118,6 @@ function ConsoleModder:InitiateHookers()
 
     local word_predictor = self.console_edit.prediction_widget.word_predictor
 
-    local _RefreshPredictions = word_predictor.RefreshPredictions
-    word_predictor.RefreshPredictions = function (word_predictor, text, cursor_pos)
-        if self:DynamicComplete(text, cursor_pos) then return end
-        return _RefreshPredictions(word_predictor, text, cursor_pos)
-    end
-
     -- These ones we're completely overriding
     AssertDefinitionSource(self.screen, "Run", "scripts/screens/consolescreen.lua")
     self.screen.Run = function()
@@ -612,8 +606,4 @@ function ConsoleModder:Run()
         local btn = self.buttons["Client"]
         if btn then btn:onclick() end
 	end
-end
-
-function ConsoleModder:DynamicComplete(text, cursor_pos)
-    return TryComplete(self.console_edit.prediction_widget, text, cursor_pos, self.screen.toggle_remote_execute)
 end

@@ -174,6 +174,7 @@ modimport "main/tester"
 
 local FEATURES = {
     "cpm_textedit_click_to_position",
+    "cpm_dynamic_completion"
 }
 
 local modules = {}
@@ -182,10 +183,9 @@ for _, module in ipairs(FEATURES) do
     Log("Loading feature module %q", module)
     local ok, result = pcall(Require, module)
     if not ok then
-        print("[ConsolePP] Failed to load module: "..module)
+        Log("Failed to load module: %q", module)
         moderror(result)
     else
-        print("Loaded!")
         modules[module] = result
     end
 end
