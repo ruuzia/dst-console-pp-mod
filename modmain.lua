@@ -166,6 +166,14 @@ AddModRPCHandler(RPC_NAMESPACE, "RequestClusterLog", function(player, shard)
 end)
 
 modimport "main/consolemodder"
+
+local __ctor = Impurities:New(ConsoleScreen, "_ctor")
+ConsoleScreen._ctor = function(self, ...)
+    Config:Update()
+    __ctor(self, ...)
+    ConsoleModder(self)
+end
+
 modimport "main/textedit"
 modimport "main/consolelog"
 modimport "main/wordpredictionwidget"
@@ -175,7 +183,8 @@ local FEATURES = {
     "cpm_textedit_click_to_position",
     "cpm_dynamic_completion",
     "cpm_multiline_console_input",
-    "cpm_keep_open"
+    "cpm_keep_open",
+    "cpm_shard_logs",
 }
 
 local modules = {}
@@ -195,11 +204,4 @@ end
 
 function GetFeatureModules()
     return modules
-end
-
-local __ctor = Impurities:New(ConsoleScreen, "_ctor")
-ConsoleScreen._ctor = function(self, ...)
-    Config:Update()
-    __ctor(self, ...)
-    ConsoleModder(self)
 end

@@ -36,8 +36,6 @@ ConsoleModder = Class(function(self, screen)
 
     self.islogshown = Config.OPENLOGWITHCONSOLE or TheFrontEnd.consoletext.shown
 
-    self.buttons = {}
-
     ConsolePP.tmp.CM = self -- weak reference for in game debugging
     self:InitiateHookers()
     self:PostInit()
@@ -80,10 +78,10 @@ function ConsoleModder:InitiateHookers()
     local word_predictor = self.console_edit.prediction_widget.word_predictor
 
     -- These ones we're completely overriding
-    AssertDefinitionSource(self.screen, "Run", "scripts/screens/consolescreen.lua")
-    self.screen.Run = function()
-        return self:Run()
-    end
+    -- AssertDefinitionSource(self.screen, "Run", "scripts/screens/consolescreen.lua")
+    -- self.screen.Run = function()
+    --     return self:Run()
+    -- end
     AssertDefinitionSource(self.screen, "Close", "scripts/screens/consolescreen.lua")
     self.screen.Close = function()
         return self:Close()
@@ -116,27 +114,8 @@ function ConsoleModder:BuildStaticRoot()
     staticroot:SetPosition(0,100,0)
 
     self.staticroot = staticroot
-end
-
---- Get the active shard
----@return string|nil name of the current shard
-local function GetShard()
-    if rawget(G, "TheWorld") == nil then
-        -- We're not in game!
-        return nil
-    end
-    if not TheNet:GetIsClient() or not TheNet:GetIsServerAdmin() then
-        -- We're not running a dedicated server
-        return nil
-    end
-
-    if G.TheWorld:HasTag "forest" then
-        return "Master"
-    elseif G.TheWorld:HasTag "cave" then
-        return "Caves"
-    end
-
-    -- return nil
+    -- Make accessible from screen
+    self.screen._cpm_staticroot = staticroot
 end
 
 --- We do out initialization here
@@ -151,96 +130,16 @@ function ConsoleModder:PostOnBecomeActive()
     else
         remote = historyline.remote
     end
-    self.screen:ToggleRemoteExecute(remote or false)
+    -- TODO: move to module
+    -- self.screen:ToggleRemoteExecute(remote or false)
 
     TheFrontEnd.consoletext:Hide()
 
-    Impurities:New(TheFrontEnd, "ShowConsoleLog")
-    Impurities:New(TheFrontEnd, "HideConsoleLog")
-    TheFrontEnd.ShowConsoleLog = function (frontend)
-        self.islogshown = true
-        frontend.consoletext.shown = self.islogshown
-        self.scrollable_log:Show()
-        for _,btn in ipairs(self.buttons) do btn:Show() end
-    end
-    TheFrontEnd.HideConsoleLog = function (frontend)
-        self.islogshown = false
-        frontend.consoletext.shown = false
-        self.scrollable_log:Hide()
-        for _,btn in ipairs(self.buttons) do btn:Hide() end
-    end
-
     if self.islogshown then TheFrontEnd:ShowConsoleLog() else TheFrontEnd:HideConsoleLog() end
-
-    if self.screen.toggle_remote_execute and TheNet:GetIsClient() and TheNet:GetIsServerAdmin() then
-        local shard = GetShard()
-        if shard and self.buttons[shard] then
-            self.buttons[shard].onclick()
-        end
-    end
-
 end
 
 local Menu = require "widgets/menu"
 local TEMPLATES = require "widgets/redux/templates"
-local TextButton = require "widgets/textbutton"
-
--- Log buttons to toggle between Client, Server, and Caves
-local function logButton(onclick, label, color)
-    local btn = TextButton(label)
-    btn:SetOnClick(onclick)
-    btn:SetText(label)
-    btn:SetTextColour(color)
-    --btn:SetTextFocusColour(G.UICOLOURS.GOLD)
-    btn:SetTextFocusColour(color)
-    btn:SetFont(G.NEWFONT_OUTLINE)
-    btn.scale = 1.0
-    btn:SetOnGainFocus(function()
-        btn:SetScale(btn.scale + .10)
-    end)
-    btn:SetOnLoseFocus(function()
-        btn:SetScale(btn.scale)
-    end)
-    btn:SetScale(btn.scale)
-    return btn
-end
-
-local function make_log_switch_buttons(self)
-    -- If no dedicated servers, don't make buttons
-    if not TheNet:GetIsClient() and not G.TheNet:GetIsHosting() then return end
-
-    local x = -500
-    local y = 210
-    do
-        local btn = self.staticroot:AddChild(logButton(function ()
-            self.scrollable_log.history = Logs.client
-            self.scrollable_log:RefreshWidgets(true)
-            self.scrollable_log:SetTextColour(unpack(G.PORTAL_TEXT_COLOUR))
-
-            self.console_edit:SetEditing(true)
-            return true
-        end, "Client", G.PORTAL_TEXT_COLOUR))
-        table.insert(self.buttons, btn)
-        self.buttons["Client"] = btn
-        btn:SetPosition(x, y)
-    end
-
-    for i, shard in ipairs {"Master", "Caves"} do
-        local btn = self.staticroot:AddChild(logButton(function ()
-            Logs:UpdateClusterLog(shard, function()
-                self.scrollable_log:RefreshWidgets(true)
-            end)
-            self.scrollable_log.history = Logs.cluster[shard]
-            self.scrollable_log:SetTextColour(unpack(Config.SHARD_LOG_COLOURS[shard]))
-
-            self.console_edit:SetEditing(true)
-            return true
-        end, shard, Config.SHARD_LOG_COLOURS[shard]))
-        btn:SetPosition(x + i * 100, y)
-        table.insert(self.buttons, btn)
-        self.buttons[shard] = btn
-    end
-end
 
 function ConsoleModder:PostInit()
     local words = {
@@ -282,18 +181,8 @@ function ConsoleModder:PostInit()
     --self.scrollable_log:SetVAnchor(G.ANCHOR_BOTTOM)
     self.scrollable_log:SetPosition(-550, -200)
     self.scrollable_log:RefreshOnClientPrint()
-
-    make_log_switch_buttons(self)
-
-    self.console_edit.OnStopForceEdit = function ()
-        for i = 1, #self.buttons do
-            if self.buttons[i].focus then
-                --self.console_edit:SetEditing(true)
-                return
-            end
-        end
-        self:Close()
-    end
+    -- Mae accessible from screen
+    self.screen._cpm_scrollable_log = self.scrollable_log
 
     self.scrollable_log:SetPosition(-550, -200)
 
@@ -307,6 +196,19 @@ function ConsoleModder:PostInit()
 
     self.console_edit:SetPassControlToScreen(G.CONTROL_SCROLLBACK, true)
     self.console_edit:SetPassControlToScreen(G.CONTROL_SCROLLFWD, true)
+
+    Impurities:New(TheFrontEnd, "ShowConsoleLog")
+    Impurities:New(TheFrontEnd, "HideConsoleLog")
+    TheFrontEnd.ShowConsoleLog = function (frontend)
+        self.islogshown = true
+        frontend.consoletext.shown = self.islogshown
+        self.scrollable_log:Show()
+    end
+    TheFrontEnd.HideConsoleLog = function (frontend)
+        self.islogshown = false
+        frontend.consoletext.shown = false
+        self.scrollable_log:Hide()
+    end
 end
 
 function ConsoleModder:VerifyEditOnRawKey(key, down)
@@ -459,8 +361,6 @@ function ConsoleModder:PostToggleRemoteExecute()
 
     local label = self.screen.console_remote_execute
     if self.screen.toggle_remote_execute then
-        local shard = GetShard()
-        if shard then label:SetColour(Config.SHARD_LOG_COLOURS[shard]) end
     else
         label:SetColour(1,0.7,0.7,1)
     end
@@ -487,16 +387,10 @@ function ConsoleModder:Run()
 		TheNet:SendRemoteExecute(fnstr, x, z)
 
         self.screen.inst:DoTaskInTime(0, function ()
-            local shard = GetShard()
-            if shard and self.buttons[shard] then
-                self.buttons[shard].onclick()
-            end
             --self.scrollable_log:RefreshWidgets(true)
         end)
 	else
 		G.ExecuteConsoleCommand(fnstr)
         --self.scrollable_log:RefreshWidgets()
-        local btn = self.buttons["Client"]
-        if btn then btn:onclick() end
 	end
 end
