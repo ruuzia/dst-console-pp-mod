@@ -4,6 +4,7 @@ setfenv(1, ConsolePP.env)
 local G = GLOBAL
 
 local WordPredictor = require "util/wordpredictor"
+local ConsoleScreen = require "screens/consolescreen"
 
 local Handler = Require "cpm_dynamic_completion.handler"
 
@@ -18,6 +19,14 @@ Hook(WordPredictor, "RefreshPredictions", function (orig, self, text, cursor_pos
     return orig(self, text, cursor_pos, ...)
 end)
 
+-- Refresh completions after ToggleRemoteExecute
+Hook(ConsoleScreen, "ToggleRemoteExecute", function (orig, self, ...)
+    local ret = { orig(self, ...) }
+
+    self.console_edit.prediction_widget:RefreshPredictions()
+
+    return unpack(ret)
+end)
 
 Require "cpm_dynamic_completion.support_completing_in_middle"
 

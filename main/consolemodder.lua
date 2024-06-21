@@ -69,12 +69,6 @@ function ConsoleModder:InitiateHookers()
             or _OnControl(s, ...)
     end
 
-    local _ToggleRemoteExecute = self.screen.ToggleRemoteExecute
-    self.screen.ToggleRemoteExecute = function(...)
-        _ToggleRemoteExecute(...)
-        self:PostToggleRemoteExecute()
-    end
-
     local word_predictor = self.console_edit.prediction_widget.word_predictor
 
     AssertDefinitionSource(self.screen, "Close", "scripts/screens/consolescreen.lua")
@@ -346,18 +340,4 @@ function ConsoleModder:VerifyOnControl(control, down)
     if not down and control == G.CONTROL_OPEN_DEBUG_CONSOLE and TheInput:IsKeyDown(G.KEY_SHIFT) then
         return true
     end
-end
-
-function ConsoleModder:PostToggleRemoteExecute()
-    -- Now remote toggle is sometimes forced even when there is no remote,
-    -- so we add our own guard
-    local is_valid_time_to_use_remote = TheNet:GetIsClient() and TheNet:GetIsServerAdmin()
-    if not is_valid_time_to_use_remote then return end
-
-    local label = self.screen.console_remote_execute
-    if self.screen.toggle_remote_execute then
-    else
-        label:SetColour(1,0.7,0.7,1)
-    end
-    self.console_edit.prediction_widget:RefreshPredictions()
 end
