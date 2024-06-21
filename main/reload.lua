@@ -27,7 +27,7 @@ end
 
 function Impurities:Restore(loc, key)
     local item = self.items[loc]
-    if not item then return end          -- Keys (the locations) are weak,
+    if not item or not item[key] then return end          -- Keys (the locations) are weak,
                                          --   Could have been already been GC'd
     loc[key] = item[key][1]              -- Restore the value
     item[key] = nil                      -- Discard the impurity
