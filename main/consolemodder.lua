@@ -121,17 +121,7 @@ function ConsoleModder:VerifyEditOnRawKey(key, down)
         self.screen.ctrl_pasting = true
     end
 
-    if key == G.KEY_HOME then
-        self.console_edit.inst.TextEditWidget:SetEditCursorPos(StrGetLineStart(contents, cursorpos) - 1)
-        ForceFocusTextEditCursor(self.console_edit)
-        return true
-
-    elseif key == G.KEY_END then
-        self.console_edit.inst.TextEditWidget:SetEditCursorPos(StrGetLineEnd(contents, cursorpos))
-        ForceFocusTextEditCursor(self.console_edit)
-        return true
-
-    elseif key == KEY_BACKSPACE then
+    if key == KEY_BACKSPACE then
         local linestart = StrGetLineStart(contents, cursorpos)
         local chars = contents:sub(linestart, cursorpos)
         if chars:find "^%s+$" then

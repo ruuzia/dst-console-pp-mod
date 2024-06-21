@@ -69,6 +69,20 @@ Hook(TextEdit, "OnRawKey", function(orig, self, key, down)
             self.inst.TextEditWidget:SetEditCursorPos(i)
             ForceFocusTextEditCursor(self)
             return true
+
+        elseif key == KEY_HOME then
+            local contents = self:GetString()
+            local cursor = self.inst.TextEditWidget:GetEditCursorPos()
+            self.inst.TextEditWidget:SetEditCursorPos(StrGetLineStart(contents, cursor) - 1)
+            ForceFocusTextEditCursor(self)
+            return true
+
+        elseif key == KEY_END then
+            local contents = self:GetString()
+            local cursor = self.inst.TextEditWidget:GetEditCursorPos()
+            self.inst.TextEditWidget:SetEditCursorPos(StrGetLineEnd(contents, cursor))
+            ForceFocusTextEditCursor(self)
+            return true
         end
     end
 
