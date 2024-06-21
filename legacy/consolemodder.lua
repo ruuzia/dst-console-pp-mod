@@ -18,11 +18,6 @@
 
 local G = GLOBAL
 
-local History = require "history"
-
--- In beta
-G.global "ConsoleScreenSettings"
-
 --- The ConsoleModder class wraps around a ConsoleScreen.
 ConsoleModder = Class(function(self, screen)
     self.screen = assert(screen)

@@ -80,8 +80,6 @@ AddModRPCHandler(RPC_NAMESPACE, "RequestClusterLog", function(player, shard)
     end)
 end)
 
-modimport "main/consolemodder"
-
 local ConsoleScreen = require("screens/consolescreen")
 local __ctor = Impurities:New(ConsoleScreen, "_ctor")
 ConsoleScreen._ctor = function(self, ...)
@@ -108,6 +106,7 @@ local FEATURES = {
     "cpm_pseudoclipboard",
     "cpm_tab_insertion",
     "cpm_arrow_keys_move_between_lines",
+    "cpm_completion_key_config",
     -- This is basically unneeded now (klei updates)
     -- "cpm_wordpredictionwidget",
 }

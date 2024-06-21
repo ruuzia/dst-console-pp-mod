@@ -28,8 +28,6 @@ Hook(ConsoleScreen, "ToggleRemoteExecute", function (orig, self, ...)
     return unpack(ret)
 end)
 
-Require "cpm_dynamic_completion.support_completing_in_middle"
-
 return {
     tests = {
         ["test global word prediction"] = function ()
