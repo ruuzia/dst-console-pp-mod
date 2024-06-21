@@ -108,40 +108,6 @@ ModFenv(G.OnServerPauseDirty, {
     end;
 })
 
-
-AssertDefinitionSource(G, "ExecuteConsoleCommand", "scripts/mainfunctions.lua")
----@param fnstr string
----@param guid number
----@param x number
----@param z number
-function G.ExecuteConsoleCommand(fnstr, guid, x, z)
-    local saved_ThePlayer = G.ThePlayer
-
-    if guid then G.ThePlayer = Ents[guid] end
-    TheInput.overridepos = x ~= nil and z ~= nil and Vector3(x, 0, z) or nil
-
-    -- lstrip "="
-    local equalsstart = fnstr:find("^%=")
-    if equalsstart then
-        fnstr = fnstr:sub(2)
-    end
-
-    -- First try evaluate as expression
-    local result = {pcall(loadstring("return "..fnstr))}
-    -- If failed
-    if not result[1] and not equalsstart then
-        result = {pcall(loadstring(fnstr))}
-    end
-    if #result > 1 then
-        for i = 2, #result do
-            PrettyPrint(result[i]);
-        end
-    end
-
-    G.ThePlayer = saved_ThePlayer
-    TheInput.overridepos = nil
-end
-
 ------------------------------------------------------------
 ------------------------------------------------------------
 
@@ -171,7 +137,7 @@ local __ctor = Impurities:New(ConsoleScreen, "_ctor")
 ConsoleScreen._ctor = function(self, ...)
     Config:Update()
     __ctor(self, ...)
-    ConsoleModder(self)
+    -- ConsoleModder(self)
 end
 
 modimport "main/textedit"
@@ -184,7 +150,8 @@ local FEATURES = {
     "cpm_dynamic_completion",
     "cpm_multiline_console_input",
     "cpm_keep_open",
-    "cpm_shard_logs",
+    "cpm_expression_eval",
+    -- "cpm_shard_logs",
 }
 
 local modules = {}
