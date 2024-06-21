@@ -10,7 +10,7 @@ end
 
 require "debugcommands"
 
-modimport "main/env"
+modimport "util/env"
 
 local pcall, loadstring, Ents, Vector3 = G.pcall, G.loadstring, G.Ents, G.Vector3
 local TheInput = G.TheInput
@@ -31,8 +31,9 @@ G.ConsolePP = ConsolePP
 
 RPC_NAMESPACE = "ConsolePP"
 
-modimport "main/reload"
-modimport "main/util"
+modimport "util/reload"
+modimport "util/util"
+modimport "util/config"
 
 
 local ModConfigurationScreen = require "screens/redux/modconfigurationscreen"
@@ -48,8 +49,6 @@ Assets = {
     Asset("ATLAS", "images/textbox_long_thinborder.xml"),
 }
 
-modimport "main/config"
-
 ModFenv(G.OnServerPauseDirty, {
     print = function(...)
         if Config.IGNORES[(...)] then return end
@@ -60,7 +59,7 @@ ModFenv(G.OnServerPauseDirty, {
 ------------------------------------------------------------
 ------------------------------------------------------------
 
-modimport "main/logs"
+modimport "util/logs"
 Logs = LogHistory()
 
 AddClientModRPCHandler(RPC_NAMESPACE, "ClusterLog", function(shard, content)
@@ -88,9 +87,9 @@ ConsoleScreen._ctor = function(self, ...)
     -- ConsoleModder(self)
 end
 
-modimport "main/textedit"
-modimport "main/consolelog"
-modimport "main/tester"
+modimport "util/textedit"
+modimport "util/consolelog"
+modimport "util/tester"
 
 local FEATURES = {
     "cpm_use_last_remote_toggle",

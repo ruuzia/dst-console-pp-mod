@@ -8,16 +8,6 @@ function ForceFocusTextEditCursor(self)
     self.inst.TextEditWidget:OnKeyDown(G.KEY_LCTRL, false)
 end
 
-local WordPredictionWidget = require "widgets/wordpredictionwidget"
-
-Hook(WordPredictionWidget, "_ctor", function(orig, self, ...)
-    orig(self, ...)
-    self.tab_complete = false -- I handle tab complete
-    -- either enter_complete or tab_complete must be true for WordPredictionWidget:IsMouseOnly
-    self.enter_complete = Config.ENTERCOMPLETE
-    function self:IsMouseOnly() return not Config.ENTERCOMPLETE and not Config.TABCOMPLETE end
-end)
-
 -- Hook(TextEdit, "_ctor", function(orig, self, ...)
 --     -- Windows does funky
 --     self:SetInvalidCharacterFilter(string.char(3, 12, 25, 26))
