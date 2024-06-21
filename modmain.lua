@@ -137,7 +137,7 @@ local __ctor = Impurities:New(ConsoleScreen, "_ctor")
 ConsoleScreen._ctor = function(self, ...)
     Config:Update()
     __ctor(self, ...)
-    -- ConsoleModder(self)
+    ConsoleModder(self)
 end
 
 modimport "main/textedit"
@@ -151,7 +151,7 @@ local FEATURES = {
     "cpm_multiline_console_input",
     "cpm_keep_open",
     "cpm_expression_eval",
-    -- "cpm_shard_logs",
+    "cpm_shard_logs",
 }
 
 local modules = {}
