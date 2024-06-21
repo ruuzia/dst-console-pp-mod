@@ -6,6 +6,6 @@ function ConsolePP.Config()
 end
 
 -- TODO: deprecate
-G.c_config = CosolePP.Config
+G.c_config = Console.Config
 
 return {}

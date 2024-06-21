@@ -43,33 +43,33 @@ Assets = {
 ------------------------------------------------------------
 ------------------------------------------------------------
 
-
+local FEATURE_PATH = "consolepp/"
 local FEATURES = {
-    "cpm_use_last_remote_toggle",
-    "cpm_textedit_click_to_position",
-    "cpm_dynamic_completion",
-    "cpm_multiline_console_input",
-    "cpm_keep_open",
-    "cpm_expression_eval",
-    "cpm_scrollable_log",
-    "cpm_shard_logs",
-    "cpm_console_commands",
-    "cpm_text_navigation",
-    "cpm_pseudoclipboard",
-    "cpm_tab_insertion",
-    "cpm_arrow_keys_move_between_lines",
-    "cpm_completion_key_config",
-    "cpm_arrow_keys_move_between_lines",
-    "cpm_quiet_server_pause_messages",
-    "cpm_config_screen",
-    "cpm_hot_reload",
+    "use_last_remote_toggle",
+    "textedit_click_to_position",
+    "dynamic_completion",
+    "multiline_console_input",
+    "keep_open",
+    "expression_eval",
+    "scrollable_log",
+    "shard_logs",
+    "console_commands",
+    "text_navigation",
+    "pseudoclipboard",
+    "tab_insertion",
+    "arrow_keys_move_between_lines",
+    "completion_key_config",
+    "arrow_keys_move_between_lines",
+    "quiet_server_pause_messages",
+    "config_screen",
+    "hot_reload",
 }
 
 local modules = {}
 
 for _, module in ipairs(FEATURES) do
     Log("Loading feature module %q", module)
-    local ok, result = pcall(Require, module)
+    local ok, result = pcall(Require, FEATURE_PATH..module)
     if not ok then
         Log("Failed to load module: %q", module)
         moderror(result)

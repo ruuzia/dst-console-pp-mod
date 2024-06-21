@@ -1,9 +1,13 @@
+-- Dynamically complete global variables and/or field names.
+--
 setfenv(1, ConsolePP.env)
 local G = GLOBAL
-local Handler = {}
 
-local Predictor = Require 'cpm_dynamic_completion.prediction'
-local Lua = Require 'cpm_dynamic_completion.lua'
+local WordPredictor = require "util/wordpredictor"
+local ConsoleScreen = require "screens/consolescreen"
+
+local Predictor = Require 'consolepp.dynamic_completion.prediction'
+local Lua = Require 'consolepp.dynamic_completion.lua'
 
 local SimpleGetDisplayString = function(word) return word end
 local function ForceWordPrediction(wp, str, exprstart, matches)
@@ -51,8 +55,8 @@ AddModRPCHandler(RPC_NAMESPACE, "RequestGlobalCompletions", function(player, str
     end
 end)
 
-local _ignore = false
 
+local _ignore = false
 AddClientModRPCHandler(RPC_NAMESPACE, "Completions", function(completestr, exprstart, matches)
     -- Check console screen is still open
     local scrn = Predictor.TheFrontEnd:GetActiveScreen()
@@ -92,7 +96,8 @@ local ignored_searches = {
     ["then"] = true,
     ["end"] = true,
 }
-function Handler.TryComplete(wp, text, cursor_pos, remote_execute)
+
+local function TryComplete(wp, text, cursor_pos, remote_execute)
     -- only being called to force refresh the buttons
     if _ignore then _ignore = false return true end
 
@@ -156,4 +161,39 @@ function Handler.TryComplete(wp, text, cursor_pos, remote_execute)
     return true
 end
 
-return Handler
+Hook(WordPredictor, "RefreshPredictions", function (orig, self, text, cursor_pos, ...)
+    local screen = TheFrontEnd:GetActiveScreen()
+    if screen and screen.name == "ConsoleScreen" then
+        local dynamic_completions = TryComplete(self, text, cursor_pos, screen.toggle_remote_execute)
+        if dynamic_completions ~= nil then
+            return dynamic_completions
+        end
+    end
+    return orig(self, text, cursor_pos, ...)
+end)
+
+-- Refresh completions after ToggleRemoteExecute
+Hook(ConsoleScreen, "ToggleRemoteExecute", function (orig, self, ...)
+    local ret = { orig(self, ...) }
+
+    self.console_edit.prediction_widget:RefreshPredictions()
+
+    return unpack(ret)
+end)
+
+return {
+    tests = {
+        ["test global word prediction"] = function ()
+            local screen = Tester.OpenConsole()
+            Tester.SendTextInput("ConsoleP")
+            local prediction_widget = screen.console_edit.prediction_widget
+            Assert(#prediction_widget.prediction_btns > 0)
+            AssertEq(screen.console_edit:GetString(), "ConsoleP")
+            AssertEq(prediction_widget.prediction_btns[1]:GetText(), "ConsolePP")
+            -- Accept completion
+            Tester.PressEnter()
+            AssertEq(screen.console_edit:GetString(), "ConsolePP")
+            AssertEq(#prediction_widget.prediction_btns, 0)
+        end,
+    }
+}

@@ -1,5 +1,8 @@
 setfenv(1, ConsolePP.env)
 local G = GLOBAL
+local ConsoleScreen = require "screens/consolescreen"
+local KnownModIndex = G.KnownModIndex
+local ModManager = G.ModManager
 
 local function RemoveModRPCNamespace(namespace)
     G.MOD_RPC[namespace] = nil
