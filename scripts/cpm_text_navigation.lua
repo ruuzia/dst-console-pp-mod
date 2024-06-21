@@ -33,6 +33,7 @@ Hook(TextEdit, "OnRawKey", function(orig, self, key, down)
         elseif key == G.KEY_TAB then
             if Config.TABCOMPLETE and active_prediction_btn then
                 self:ApplyWordPrediction(active_prediction_btn)
+                return true
 
             elseif Config.TABNEXT and active_prediction_btn then
                 local prediction_btns = self.prediction_widget.prediction_btns
@@ -43,11 +44,8 @@ Hook(TextEdit, "OnRawKey", function(orig, self, key, down)
                         prediction_btns[active_prediction_btn < #prediction_btns and active_prediction_btn + 1 or 1]:Select()
                     end
                 end
+                return true
 
-            elseif Config.TABINSERT and self.nextTextEditWidget == nil then
-                for _ = 1, Config.TABSPACES do
-                    self.inst.TextEditWidget:OnTextInput(' ')
-                end
             end
 
         elseif key == KEY_LEFT and ctrl_down then

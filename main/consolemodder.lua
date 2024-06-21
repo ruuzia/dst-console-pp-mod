@@ -107,31 +107,18 @@ function ConsoleModder:VerifyEditOnRawKey(key, down)
     -- We'll keep this as a back up
     -- self.screen.inst:DoTaskInTime(0, function() self:UpdateConsoleSize() end)
 
-    local ctrl_down = TheInput:IsKeyDown(G.KEY_CTRL)
-    local contents = self.console_edit:GetString()
-    local cursorpos = self.console_edit.inst.TextEditWidget:GetEditCursorPos()
+    -- local ctrl_down = TheInput:IsKeyDown(G.KEY_CTRL)
 
     if key ~= G.KEY_DOWN and key ~= G.KEY_UP then
         self.goalxpos = nil
     end
 
-    if not down then return false end
-
-    if not Config.REMOTETOGGLEKEYS[key] and ctrl_down then
-        self.screen.ctrl_pasting = true
-    end
-
-    if key == KEY_BACKSPACE then
-        local linestart = StrGetLineStart(contents, cursorpos)
-        local chars = contents:sub(linestart, cursorpos)
-        if chars:find "^%s+$" then
-            for i = 1, math.min(#chars, Config.TABSPACES) do
-                self.console_edit.inst.TextEditWidget:OnKeyDown(KEY_BACKSPACE)
-                --self.console_edit.inst.TextEditWidget:OnKeyUp(KEY_BACKSPACE)
-            end
-            return true
-        end
-   end
+    -- if not down then return false end
+    --
+    -- if not Config.REMOTETOGGLEKEYS[key] and ctrl_down then
+    --     self.screen.ctrl_pasting = true
+    -- end
+    --
 end
 
 function ConsoleModder:UpdateGoalXPos()
@@ -229,8 +216,9 @@ function ConsoleModder:ScreenOnRawKeyHandler(_OnRawKeyHandler, key, down)
     end
 end
 
-function ConsoleModder:VerifyOnControl(control, down)
-    if not down and control == G.CONTROL_OPEN_DEBUG_CONSOLE and TheInput:IsKeyDown(G.KEY_SHIFT) then
-        return true
-    end
-end
+-- What is this for??
+-- function ConsoleModder:VerifyOnControl(control, down)
+--     if not down and control == G.CONTROL_OPEN_DEBUG_CONSOLE and TheInput:IsKeyDown(G.KEY_SHIFT) then
+--         return true
+--     end
+-- end
