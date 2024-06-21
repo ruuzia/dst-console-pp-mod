@@ -43,12 +43,6 @@ end)
 function ConsoleModder:InitiateHookers()
     --doesn't modify the global environment so automatically works with hot reload
 
-    local _OnBecomeActive = self.screen.OnBecomeActive
-    self.screen.OnBecomeActive = function(s, ...)
-        _OnBecomeActive(s, ...)
-        self:PostOnBecomeActive()
-    end
-
     local _OnRawKey = self.console_edit.OnRawKey
     self.console_edit.OnRawKey = function(s, ...)
         return self:VerifyEditOnRawKey(...) or _OnRawKey(s, ...)
@@ -66,22 +60,6 @@ function ConsoleModder:InitiateHookers()
             -- or self.scrollable_log:OnChatControl(...)
             or _OnControl(s, ...)
     end
-end
-
---- We do out initialization here
-function ConsoleModder:PostOnBecomeActive()
-    -- Behevior: restore remote/local state of last command
-    -- Also: syncs with which shard log is open
-    local history = G.ConsoleScreenSettings:GetConsoleHistory()
-    local historyline = history and history[#history]
-    local remote
-    if historyline == nil then
-        remote = true
-    else
-        remote = historyline.remote
-    end
-    -- TODO: move to module
-    -- self.screen:ToggleRemoteExecute(remote or false)
 end
 
 local Menu = require "widgets/menu"

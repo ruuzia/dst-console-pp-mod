@@ -87,7 +87,7 @@ local __ctor = Impurities:New(ConsoleScreen, "_ctor")
 ConsoleScreen._ctor = function(self, ...)
     Config:Update()
     __ctor(self, ...)
-    ConsoleModder(self)
+    -- ConsoleModder(self)
 end
 
 modimport "main/textedit"
@@ -96,6 +96,7 @@ modimport "main/wordpredictionwidget"
 modimport "main/tester"
 
 local FEATURES = {
+    "cpm_use_last_remote_toggle",
     "cpm_textedit_click_to_position",
     "cpm_dynamic_completion",
     "cpm_multiline_console_input",
