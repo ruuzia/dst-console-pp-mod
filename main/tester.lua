@@ -55,6 +55,20 @@ end
 
 Tester = {}
 
+local function _RunTestsForModule(_, module)
+    Log("Running tests for module %q", module.name)
+    for test_name, fn in pairs(module.tests or {}) do
+        local ok = xpcall(fn, function(err)
+            Log("FAIL: %s\n%s", tostring(err), debug.traceback(3))
+        end)
+        if ok then
+            Log("Test succeeded: "..test_name)
+        else
+            Log("Test failed: "..test_name)
+        end
+    end
+end
+
 local function _RunTests()
     local count_succeeded = 0
     local count_failed = 0
@@ -63,7 +77,7 @@ local function _RunTests()
             Log("WARNING: no tests for module %q", module.name)
         end
         Log("Running tests for module %q", module.name)
-        for test_name, fn in pairs(module.tests) do
+        for test_name, fn in pairs(module.tests or {}) do
             local ok = xpcall(fn, function(err)
                 Log("FAIL: %s\n%s", tostring(err), debug.traceback(3))
             end)
@@ -79,8 +93,21 @@ local function _RunTests()
     print(count_failed.." tests failed.")
 end
 
+function RunTestsForModule(name)
+    local module
+    for _,m in ipairs(GetFeatureModules()) do
+        if m.name == name then
+            module = m
+            break
+        end
+    end
+    Tester.CloseConsole()
+    G.TheGlobalInstance:DoTaskInTime(0.1, _RunTestsForModule, module)
+end
+
 function RunTests()
     -- Add delay
+    Tester.CloseConsole()
     G.TheGlobalInstance:DoTaskInTime(0.1, _RunTests)
 end
 
