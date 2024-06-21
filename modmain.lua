@@ -101,6 +101,7 @@ local FEATURES = {
     "cpm_multiline_console_input",
     "cpm_keep_open",
     "cpm_expression_eval",
+    "cpm_scrollable_log",
     "cpm_shard_logs",
     "cpm_console_commands",
 }

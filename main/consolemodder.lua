@@ -18,8 +18,6 @@
 
 local G = GLOBAL
 
-local Widget = require "widgets/widget"
-
 local History = require "history"
 
 -- In beta
@@ -34,7 +32,7 @@ ConsoleModder = Class(function(self, screen)
     -- See ConsoleModder:ScreenOnRawKeyHandler
     self.unsaved_work = ""
 
-    self.islogshown = Config.OPENLOGWITHCONSOLE or TheFrontEnd.consoletext.shown
+    -- self.islogshown = Config.OPENLOGWITHCONSOLE or TheFrontEnd.consoletext.shown
 
     ConsolePP.tmp.CM = self -- weak reference for in game debugging
     self:InitiateHookers()
@@ -65,46 +63,9 @@ function ConsoleModder:InitiateHookers()
     local _OnControl = self.screen.OnControl
     self.screen.OnControl = function(s, ...)
         return self:VerifyOnControl(...)
-            or self.scrollable_log:OnChatControl(...)
+            -- or self.scrollable_log:OnChatControl(...)
             or _OnControl(s, ...)
     end
-
-    local word_predictor = self.console_edit.prediction_widget.word_predictor
-
-    AssertDefinitionSource(self.screen, "Close", "scripts/screens/consolescreen.lua")
-    self.screen.Close = function()
-        return self:Close()
-    end
-end
-
--- Replace ConsoleScreen:Close()
-function ConsoleModder:Close()
-    -- Undo overrides
-    Impurities:Restore(TheFrontEnd, "HideConsoleLog")
-    Impurities:Restore(TheFrontEnd, "ShowConsoleLog")
-
-	TheInput:EnableDebugToggle(true)
-	TheFrontEnd:PopScreen(self.screen)
-    if Config.CLOSELOGONRUN or not self.islogshown then
-        TheFrontEnd:HideConsoleLog()
-    else
-        TheFrontEnd:ShowConsoleLog()
-    end
-end
-
-function ConsoleModder:BuildStaticRoot()
-    -- We need this for some reason
-    local staticroot = self.screen:AddChild(Widget(""))
-    staticroot:SetScaleMode(G.SCALEMODE_PROPORTIONAL)
-    staticroot:SetHAnchor(G.ANCHOR_MIDDLE)
-    staticroot:SetVAnchor(G.ANCHOR_MIDDLE)
-
-    staticroot = staticroot:AddChild(Widget(""))
-    staticroot:SetPosition(0,100,0)
-
-    self.staticroot = staticroot
-    -- Make accessible from screen
-    self.screen._cpm_staticroot = staticroot
 end
 
 --- We do out initialization here
@@ -121,10 +82,6 @@ function ConsoleModder:PostOnBecomeActive()
     end
     -- TODO: move to module
     -- self.screen:ToggleRemoteExecute(remote or false)
-
-    TheFrontEnd.consoletext:Hide()
-
-    if self.islogshown then TheFrontEnd:ShowConsoleLog() else TheFrontEnd:HideConsoleLog() end
 end
 
 local Menu = require "widgets/menu"
@@ -159,22 +116,6 @@ function ConsoleModder:PostInit()
         end
     end
 
-    -- Someone encountered error here that TheFrontEnd
-    -- Should be impossible, it exists on both client and server
-    -- perhaps it was another mod doing crazy stuff?
-    if TheFrontEnd then TheFrontEnd:HideConsoleLog() end
-    --TheFrontEnd:ShowConsoleLog()
-    self:BuildStaticRoot()
-
-    self.scrollable_log = self.staticroot:AddChild(ScrollableConsoleLog(Logs.client))
-    --self.scrollable_log:SetVAnchor(G.ANCHOR_BOTTOM)
-    self.scrollable_log:SetPosition(-550, -200)
-    self.scrollable_log:RefreshOnClientPrint()
-    -- Mae accessible from screen
-    self.screen._cpm_scrollable_log = self.scrollable_log
-
-    self.scrollable_log:SetPosition(-550, -200)
-
     self.console_edit:AddWordPredictionDictionary {words = words.d_ , delim = "d_" , num_chars = 0}
     self.console_edit:AddWordPredictionDictionary {words = words.The, delim = "The", num_chars = 0}
     --self.console_edit:AddWordPredictionDictionary {words = words.Get, delim = "Get", num_chars = 0}
@@ -182,22 +123,6 @@ function ConsoleModder:PostInit()
 
     -- game does this now!
     --self.console_edit.validrawkeys[G.KEY_V] = true
-
-    self.console_edit:SetPassControlToScreen(G.CONTROL_SCROLLBACK, true)
-    self.console_edit:SetPassControlToScreen(G.CONTROL_SCROLLFWD, true)
-
-    Impurities:New(TheFrontEnd, "ShowConsoleLog")
-    Impurities:New(TheFrontEnd, "HideConsoleLog")
-    TheFrontEnd.ShowConsoleLog = function (frontend)
-        self.islogshown = true
-        frontend.consoletext.shown = self.islogshown
-        self.scrollable_log:Show()
-    end
-    TheFrontEnd.HideConsoleLog = function (frontend)
-        self.islogshown = false
-        frontend.consoletext.shown = false
-        self.scrollable_log:Hide()
-    end
 end
 
 function ConsoleModder:VerifyEditOnRawKey(key, down)

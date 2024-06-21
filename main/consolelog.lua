@@ -61,9 +61,6 @@ ScrollableConsoleLog = Class(Widget, function(self, history)
 
 
     self:MakeLogScrollList()
-
-    TheFrontEnd.consoletext.shown = true
-
 end)
 
 function ScrollableConsoleLog:SetTextColour(r, g, b, a)
