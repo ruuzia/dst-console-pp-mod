@@ -37,6 +37,7 @@ end
 -- Log buttons to toggle between Client, Server, and Caves
 local function LogButton(screen, onactivate, label, color)
     local btn = TextButton(label)
+    btn._cpm_activate = onactivate
     btn:SetOnClick(function()
         screen.console_edit:SetEditing(true)
         local log = screen._cpm_scrollable_log
@@ -123,9 +124,9 @@ end)
 Hook(ConsoleScreen, "Run", function (orig, screen, ...)
     local shard = screen.toggle_remote_execute and ActiveShard() or "Client"
     local buttons = screen._cpm_shard_buttons
-    if shard and buttons and buttons[shard] then
+    if shard and buttons and buttons[shard] and modassert(buttons[shard]._cpm_activate) then
         screen.inst:DoTaskInTime(0, function ()
-            buttons[shard].onclick()
+            buttons[shard]._cpm_activate()
         end)
     end
 
@@ -147,11 +148,10 @@ Hook(ConsoleScreen, "OnBecomeActive", function (orig, screen, ...)
 
     -- When console screen is opened, open corresponding log based on current
     -- value of toggle_remote_execute
-    Log("OnBecomeActive "..tostring(screen.toggle_remote_execute))
     local buttons = screen._cpm_shard_buttons
     local shard = screen.toggle_remote_execute and ActiveShard() or "Client"
-    if buttons and shard and buttons[shard] then
-        buttons[shard].onclick()
+    if buttons and shard and buttons[shard] and buttons[shard]._cpm_activate then
+        buttons[shard]._cpm_activate()
     end
 
     -- Show and hide buttons along with console log?
