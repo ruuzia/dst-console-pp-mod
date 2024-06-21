@@ -4,6 +4,7 @@ G.global "ConsolePP"
 if G.ConsolePP and G.ConsolePP.env.modinfo.all_clients_require_mod and modinfo.client_only_mod then
     -- Server+all_clients version already exists
     -- Don't run client-only mod
+    -- TODO: support client-only configuration with active all clients mod
     return
 end
 
@@ -23,9 +24,6 @@ ConsolePP = G.ConsolePP or {}
 
 IS_DEDICATED = TheNet:IsDedicated()
 
-local ismastersim = TheNet:GetIsMasterSimulation()
-
-
 ConsolePP.save = ConsolePP.save or {}
 ConsolePP.tmp = setmetatable({}, {__mode = "v"})
 ConsolePP.env = env
@@ -33,58 +31,9 @@ G.ConsolePP = ConsolePP
 
 RPC_NAMESPACE = "ConsolePP"
 
-local ConsoleScreen = require("screens/consolescreen")
-
 modimport "main/reload"
-
 modimport "main/util"
 
-local revealmap_task
-local function unreveal()
-    if revealmap_task then
-        revealmap_task:Cancel()
-        revealmap_task = nil
-    end
-    G.MapHideAll()
-end
-AddClientModRPCHandler(RPC_NAMESPACE, "UnrevealMap", unreveal)
-
-function G.c_revealmap(reveal)
-    if reveal == nil then reveal = true end
-    if not G.TheWorld then
-        print("c_revealmap called in bad state")
-    elseif not G.TheWorld.ismastersim then
-        if reveal then
-            G.c_remote("c_revealmap()")
-        else
-            unreveal()
-        end
-    else
-        if not reveal then
-            if IS_DEDICATED then SendModRPCToClient(GetClientModRPC(RPC_NAMESPACE, "UnrevealMap"), nil)
-            else unreveal()
-            end
-        else
-            G.TheWorld.minimap.MiniMap:ShowArea(0,0,0,10000)
-            local MapExplorer = G.ThePlayer.player_classified.MapExplorer
-            local RevealArea = MapExplorer.RevealArea
-            local size_x, size_y = G.TheWorld.Map:GetSize()
-            size_x = size_x * 2
-            size_y = size_y * 2
-            revealmap_task = G.TheWorld:DoStaticPeriodicTask(0, coroutine.wrap(function()
-                for x = -size_x, size_x, 35 do
-                    for y = -size_y, size_y, 35 do
-                        RevealArea(MapExplorer, x, 0, y)
-                    end
-                    coroutine.yield()
-                end
-                revealmap_task:Cancel()
-                revealmap_task = nil
-            end))
-        end
-    end
-end
---]]
 
 local ModConfigurationScreen = require "screens/redux/modconfigurationscreen"
 function G.c_config()
@@ -133,6 +82,7 @@ end)
 
 modimport "main/consolemodder"
 
+local ConsoleScreen = require("screens/consolescreen")
 local __ctor = Impurities:New(ConsoleScreen, "_ctor")
 ConsoleScreen._ctor = function(self, ...)
     Config:Update()
@@ -152,6 +102,7 @@ local FEATURES = {
     "cpm_keep_open",
     "cpm_expression_eval",
     "cpm_shard_logs",
+    "cpm_console_commands",
 }
 
 local modules = {}
