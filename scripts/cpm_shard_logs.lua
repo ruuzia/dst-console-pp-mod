@@ -27,10 +27,11 @@ local function ActiveShard()
 end
 
 local function SetRemoteLabelColor(screen)
-    local shard = screen.console_remote_execute and ActiveShard() or "Client"
-    local buttons = screen._cpm_shard_buttons
-    if shard and buttons and buttons[shard] then
+    local shard = ActiveShard()
+    if screen.toggle_remote_execute and shard then
         screen.console_remote_execute:SetColour(Config.SHARD_LOG_COLOURS[shard])
+    else
+        screen.console_remote_execute:SetColour(1,0.7,0.7,1)
     end
 end
 
