@@ -14,13 +14,17 @@ Impurities.requires = {}
 
 ---@param loc table
 ---@param key any index of loc
+---@param new_value any|nil
 ---@return any current value of loc[key]
-function Impurities:New(loc, key)
+function Impurities:New(loc, key, new_value)
     self.items[loc] = self.items[loc] or {}
     -- Don't add if already added!
     if not self.items[loc][key] then
         -- Boxing the value in a table to support nil values
         self.items[loc][key] = { loc[key] }
+    end
+    if new_value ~= nil then
+        loc[key] = new_value
     end
     return loc[key]
 end
