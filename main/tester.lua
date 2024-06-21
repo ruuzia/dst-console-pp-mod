@@ -59,7 +59,7 @@ local function _RunTestsForModule(_, module)
     Log("Running tests for module %q", module.name)
     for test_name, fn in pairs(module.tests or {}) do
         local ok = xpcall(fn, function(err)
-            Log("FAIL: %s\n%s", tostring(err), debug.traceback(3))
+            Log("FAIL: %s\n%s", tostring(err), G.debugstack(3))
         end)
         if ok then
             Log("Test succeeded: "..test_name)
@@ -79,7 +79,7 @@ local function _RunTests()
         Log("Running tests for module %q", module.name)
         for test_name, fn in pairs(module.tests or {}) do
             local ok = xpcall(fn, function(err)
-                Log("FAIL: %s\n%s", tostring(err), debug.traceback(3))
+                Log("FAIL: %s\n%s", tostring(err), G.debugstack(3))
             end)
             if ok then
                 count_succeeded = count_succeeded + 1
