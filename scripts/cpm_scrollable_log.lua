@@ -33,13 +33,11 @@ Hook(ConsoleScreen, "_ctor", function (constructor, screen, ...)
 
     -- Temporarily override ShowConsoleLog and HideConsoleLog
     Impurities:New(TheFrontEnd, "ShowConsoleLog", function (frontend)
-        print "called ShowConsoleLog()"
         -- Pretend vanilla consoletext is shown
         frontend.consoletext.shown = true
         screen._cpm_scrollable_log:Show()
     end)
     Impurities:New(TheFrontEnd, "HideConsoleLog", function (frontend)
-        print "called HideConsoleLog()"
         frontend.consoletext.shown = false
         screen._cpm_scrollable_log:Hide()
     end)
@@ -88,4 +86,14 @@ Hook(ConsoleScreen, "Close", function (orig, screen, ...)
     return unpack(ret)
 end)
 
-return {}
+return {
+    tests = {
+        ["test open console with log"] = function ()
+            Impurities:New(Config, "OPENLOGWITHCONSOLE", true)
+            local screen = Tester.OpenConsole()
+            AssertEq(TheFrontEnd.consoletext.shown, true)
+            AssertEq(screen._cpm_scrollable_log.shown, true)
+            Impurities:Restore(Config, "OPENLOGWITHCONSOLE")
+        end,
+    }
+}
