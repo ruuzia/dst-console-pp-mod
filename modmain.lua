@@ -107,6 +107,7 @@ local FEATURES = {
     "cpm_text_navigation",
     "cpm_pseudoclipboard",
     "cpm_tab_insertion",
+    "cpm_arrow_keys_move_between_lines",
     -- This is basically unneeded now (klei updates)
     -- "cpm_wordpredictionwidget",
 }
