@@ -60,7 +60,7 @@ Hook(ConsoleScreen, "_ctor", function(constructor, self, ...)
     BuildFancyConsoleInput(self)
 
     -- Allow newline (but we add a hook in OnTextInput)
-    screen.console_edit:SetAllowNewline(true)
+    self.console_edit:SetAllowNewline(true)
 
     -- Post hook on console input changes
     local _OnTextInput = self.console_edit.OnTextInput
