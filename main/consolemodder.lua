@@ -71,17 +71,6 @@ function ConsoleModder:InitiateHookers()
             or _OnControl(s, ...)
     end
 
-    local _OnTextEntered = self.screen.OnTextEntered
-    self.screen.OnTextEntered = function(s, ...)
-        return self:VerifyOnTextEntered() or _OnTextEntered(s, ...)
-    end
-
-    -- local _OnTextInput = self.console_edit.OnTextInput
-    -- self.console_edit.OnTextInput = function(console_edit, text)
-    --     local ret = self:VerifyOnTextInput(text) or _OnTextInput(console_edit, text)
-    --     return ret
-    -- end
-
     local _ToggleRemoteExecute = self.screen.ToggleRemoteExecute
     self.screen.ToggleRemoteExecute = function(...)
         _ToggleRemoteExecute(...)
@@ -100,48 +89,6 @@ function ConsoleModder:InitiateHookers()
         return self:Close()
     end
 end
-
---- Called *before* the screen gets the OnTextEntered
---- @return boolean true to fallback to default OnTextEntered call
-function ConsoleModder:VerifyOnTextEntered()
-    self.console_edit:SetEditing(true)
-    -- Force run on CTRL+Enter
-    if TheInput:IsKeyDown(G.KEY_CTRL) then
-        self:Run()
-
-        if Config.KEEPCONSOLEOPEN then
-            self.console_edit:SetEditing(false)
-            return false
-        else
-            return true
-        end
-    -- KEEPCONSOLEOPEN by default just force runs
-    -- And clears the console
-    elseif Config.KEEPCONSOLEOPEN then
-        self:Run()
-        self.redo = self.console_edit:GetString()
-        self.console_edit:SetString("")
-        return true
-    else
-        -- Close console!
-        self.console_edit:SetEditing(false)
-        return false
-    end
-end
-
--- --- Before any text input for the console edit
--- --- @return boolean true to fallback to default OnTextInput
--- function ConsoleModder:VerifyOnTextInput(text)
---     if text == '\n' then
---         -- This is only for newline in pasted text
---         -- when pressing enter normally we actually it
---         -- in VerifyOnTextEntered
---         modassert(self.console_edit.pasting)
---         self.console_edit.inst.TextEditWidget:OnTextInput('\n')
---         return true
---     end
---     return false
--- end
 
 -- Replace ConsoleScreen:Close()
 function ConsoleModder:Close()

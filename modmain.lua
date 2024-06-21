@@ -175,6 +175,7 @@ local FEATURES = {
     "cpm_textedit_click_to_position",
     "cpm_dynamic_completion",
     "cpm_multiline_console_input",
+    "cpm_keep_open"
 }
 
 local modules = {}
