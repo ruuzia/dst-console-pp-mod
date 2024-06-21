@@ -92,7 +92,6 @@ end
 
 modimport "main/textedit"
 modimport "main/consolelog"
-modimport "main/wordpredictionwidget"
 modimport "main/tester"
 
 local FEATURES = {
@@ -105,6 +104,10 @@ local FEATURES = {
     "cpm_scrollable_log",
     "cpm_shard_logs",
     "cpm_console_commands",
+    "cpm_text_navigation",
+    "cpm_pseudoclipboard",
+    -- This is basically unneeded now (klei updates)
+    -- "cpm_wordpredictionwidget",
 }
 
 local modules = {}

@@ -218,4 +218,3 @@ function WordPredictionWidget:OnRawKey(key, down)
 	return false
 end
 
-
