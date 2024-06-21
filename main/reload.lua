@@ -17,8 +17,11 @@ Impurities.requires = {}
 ---@param origin any? the original value (default to current)
 ---@return any current value of loc[key]
 function Impurities:New(loc, key, orig)
+    orig = assert(orig or loc[key], "currently we need a truthy original value")
     self.items[loc] = self.items[loc] or {}
-    self.items[loc][key] = orig or loc[key]
+    if not self.items[loc][key] then
+        self.items[loc][key] = orig
+    end
     return loc[key]
 end
 
@@ -33,6 +36,7 @@ end
 function Impurities:Reset()
     for loc, item in pairs(self.items) do
         for k, orig in pairs(item) do
+            Log("Restoring %q in %q", k, tostring(loc))
             -- Restore
             loc[k] = orig
         end

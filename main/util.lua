@@ -4,11 +4,12 @@ local G = GLOBAL
 ---@param idx string
 ---@param wrapper fun(old: function, ...): any
 function Hook(loc, idx, wrapper)
-  local orig = modassert(loc[idx], "no decorator function")
-  Impurities:New(loc, idx, orig)
-  loc[idx] = function(...)
-    return wrapper(orig, ...)
-  end
+    local orig = modassert(loc[idx], "no decorator function")
+    assert(type(orig) == "function")
+    Impurities:New(loc, idx, orig)
+    loc[idx] = function(...)
+        return wrapper(orig, ...)
+    end
 end
 
 function Require(modname)
