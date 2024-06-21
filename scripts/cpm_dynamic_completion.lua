@@ -10,7 +10,7 @@ local Handler = Require "cpm_dynamic_completion.handler"
 
 Hook(WordPredictor, "RefreshPredictions", function (orig, self, text, cursor_pos, ...)
     local screen = TheFrontEnd:GetActiveScreen()
-    if screen.name == "ConsoleScreen" then
+    if screen and screen.name == "ConsoleScreen" then
         local dynamic_completions = Handler.TryComplete(self, text, cursor_pos, screen.toggle_remote_execute)
         if dynamic_completions ~= nil then
             return dynamic_completions
