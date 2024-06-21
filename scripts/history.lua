@@ -4,8 +4,9 @@
 
 local LEEWAY_MULT = 1.5
 
-local History = Class(function (self, max)
+local History = Class(function (self, max, name)
     self.size = max
+    self.name = name
 end)
 
 function History:TrimToSize()

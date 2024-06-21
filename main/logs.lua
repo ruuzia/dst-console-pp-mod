@@ -18,8 +18,7 @@ end)
 
 function LogHistory:InitClientLogs()
 
-    local clientlog = History(MAX_LOG_HISTORY)
-
+    local clientlog = History(MAX_LOG_HISTORY, "Client")
 
     self.client = clientlog
 end
@@ -123,6 +122,6 @@ function LogHistory:SetClusterLogContents(shard, contents)
 end
 
 function LogHistory:InitClusterLog(folder)
-    self.cluster[folder] = History(MAX_LOG_HISTORY)
+    self.cluster[folder] = History(MAX_LOG_HISTORY, folder)
 end
 

@@ -35,12 +35,20 @@ local function SetRemoteLabelColor(screen)
 end
 
 -- Log buttons to toggle between Client, Server, and Caves
-local function LogButton(onactivate, label, color)
+local function LogButton(screen, onactivate, label, color)
     local btn = TextButton(label)
     btn:SetOnClick(function()
-        onactivate()
-        TheFrontEnd:ShowConsoleLog()
         screen.console_edit:SetEditing(true)
+        local log = screen._cpm_scrollable_log
+        if log then
+            -- Toggle log
+            if TheFrontEnd.consoletext.shown and log.history.name == label then
+                TheFrontEnd:HideConsoleLog()
+            else
+                onactivate()
+                TheFrontEnd:ShowConsoleLog()
+            end
+        end
     end)
     btn:SetText(label)
     btn:SetTextColour(color)
@@ -71,7 +79,7 @@ Hook(ConsoleScreen, "_ctor", function (constructor, screen, ...)
     local x = -500
     local y = 210
     do
-        local btn = staticroot:AddChild(LogButton(function ()
+        local btn = staticroot:AddChild(LogButton(screen, function ()
             local log = screen._cpm_scrollable_log
             log.history = Logs.client
             log:RefreshWidgets(true)
@@ -84,7 +92,7 @@ Hook(ConsoleScreen, "_ctor", function (constructor, screen, ...)
     end
 
     for i, shard in ipairs {"Master", "Caves"} do
-        local btn = staticroot:AddChild(LogButton(function ()
+        local btn = staticroot:AddChild(LogButton(screen, function ()
             local log = screen._cpm_scrollable_log
             Logs:UpdateClusterLog(shard, function()
                 log:RefreshWidgets(true)
