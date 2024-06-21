@@ -77,11 +77,6 @@ function ConsoleModder:InitiateHookers()
 
     local word_predictor = self.console_edit.prediction_widget.word_predictor
 
-    -- These ones we're completely overriding
-    -- AssertDefinitionSource(self.screen, "Run", "scripts/screens/consolescreen.lua")
-    -- self.screen.Run = function()
-    --     return self:Run()
-    -- end
     AssertDefinitionSource(self.screen, "Close", "scripts/screens/consolescreen.lua")
     self.screen.Close = function()
         return self:Close()
@@ -365,32 +360,4 @@ function ConsoleModder:PostToggleRemoteExecute()
         label:SetColour(1,0.7,0.7,1)
     end
     self.console_edit.prediction_widget:RefreshPredictions()
-end
-
-function ConsoleModder:Run()
-	local fnstr = self.console_edit:GetString()
-
-    G.SuUsedAdd("console_used")
-
-    local toggle = self.screen.toggle_remote_execute
-
-	if fnstr ~= "" then
-		G.ConsoleScreenSettings:AddLastExecutedCommand(fnstr, self.screen.toggle_remote_execute)
-	end
-
-    -- Only remote execute if there is actually a remote to execute
-	if self.screen.toggle_remote_execute and TheNet:GetIsClient() and TheNet:GetIsServerAdmin() then
-        local x, _, z = TheSim:ProjectScreenPos(TheSim:GetPosition())
-        if fnstr:byte() == string.byte("=") then
-            fnstr = string.format("print(table.inspect((%s), 1))", fnstr:sub(2))
-        end
-		TheNet:SendRemoteExecute(fnstr, x, z)
-
-        self.screen.inst:DoTaskInTime(0, function ()
-            --self.scrollable_log:RefreshWidgets(true)
-        end)
-	else
-		G.ExecuteConsoleCommand(fnstr)
-        --self.scrollable_log:RefreshWidgets()
-	end
 end
