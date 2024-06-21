@@ -179,5 +179,22 @@ Hook(ConsoleScreen, "OnBecomeActive", function (orig, screen, ...)
     return unpack(ret)
 end)
 
+local MAX_LOG_SEND_LENGTH = 1e4
+
+AddModRPCHandler(RPC_NAMESPACE, "RequestClusterLog", function(player, shard)
+    --printf("Getting %s server log for %s", shard, tostring(player))
+    TheSim:GetPersistentString("../../"..shard.."/server_log.txt", function(succ, contents)
+        --printf("Persistent string callback, success: %s, len %d", tostring(succ), #contents)
+        if succ then
+            SendModRPCToClient(GetClientModRPC(RPC_NAMESPACE, "ClusterLog"), player.userid, shard, contents:sub(-MAX_LOG_SEND_LENGTH))
+        end
+    end)
+end)
+
+AddClientModRPCHandler(RPC_NAMESPACE, "ClusterLog", function(shard, content)
+    --printf("%s server log (len: %d) retrieved!", shard, #content)
+    Logs:SetClusterLogContents(shard, content)
+end)
+
 return {
 }

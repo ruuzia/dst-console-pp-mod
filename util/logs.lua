@@ -1,7 +1,7 @@
 local G = GLOBAL
 local MAX_LOG_HISTORY = 500
 
-LogHistory = Class(function (self)
+local LogHistory = Class(function (self)
     local name
     -- assuming first and only upvalue
     name, self.print_loggers = debug.getupvalue(G.AddPrintLogger, 1)
@@ -124,3 +124,4 @@ function LogHistory:InitClusterLog(folder)
     self.cluster[folder] = History(MAX_LOG_HISTORY, folder)
 end
 
+Logs = LogHistory()
