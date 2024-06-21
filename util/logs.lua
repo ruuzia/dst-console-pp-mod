@@ -1,5 +1,4 @@
 local G = GLOBAL
-local History = require "history"
 local MAX_LOG_HISTORY = 500
 
 LogHistory = Class(function (self)

@@ -4,7 +4,7 @@
 
 local LEEWAY_MULT = 1.5
 
-local History = Class(function (self, max, name)
+History = Class(function (self, max, name)
     self.size = max
     self.name = name
 end)
@@ -34,4 +34,3 @@ function History:Erase()
     for i = 1, #self do self[i] = nil end
 end
 
-return History

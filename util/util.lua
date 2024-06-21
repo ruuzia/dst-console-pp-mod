@@ -18,21 +18,6 @@ function Require(modname)
     return require(modname)
 end
 
----@param fn function
----@param overrides table<string, any>
-function ModFenv(fn, overrides)
-    local fenv = getfenv(fn)
-    -----support hot relod------
-    local fenv_mt = getmetatable(fenv)
-    if fenv_mt and fenv_mt._consolepp then
-        setmetatable(overrides, fenv_mt)
-    ----------------------------
-    else
-        setmetatable(overrides, { __index = fenv, _consolepp = true })
-    end
-    return setfenv(fn, overrides)
-end
-
 local nlchar = ('\n'):byte()
 
 function printf(fmt, ...)

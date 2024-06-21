@@ -34,12 +34,7 @@ RPC_NAMESPACE = "ConsolePP"
 modimport "util/reload"
 modimport "util/util"
 modimport "util/config"
-
-
-local ModConfigurationScreen = require "screens/redux/modconfigurationscreen"
-function G.c_config()
-    TheFrontEnd:PushScreen(ModConfigurationScreen(modname, true))
-end
+modimport "util/history"
 
 ------------------------------------------
 ------------------------------------------
@@ -48,13 +43,6 @@ Assets = {
     Asset("IMAGE", "images/textbox_long_thinborder.tex"),
     Asset("ATLAS", "images/textbox_long_thinborder.xml"),
 }
-
-ModFenv(G.OnServerPauseDirty, {
-    print = function(...)
-        if Config.IGNORES[(...)] then return end
-        print(...)
-    end;
-})
 
 ------------------------------------------------------------
 ------------------------------------------------------------
@@ -106,8 +94,11 @@ local FEATURES = {
     "cpm_tab_insertion",
     "cpm_arrow_keys_move_between_lines",
     "cpm_completion_key_config",
-    -- This is basically unneeded now (klei updates)
-    -- "cpm_wordpredictionwidget",
+    "cpm_arrow_keys_move_between_lines",
+    "cpm_quiet_server_pause_messages",
+    "cpm_config_screen",
+    "cpm_hot_reload",
+    -- "cpm_wordpredictionwidget", -- This is basically unneeded now (klei updates)
 }
 
 local modules = {}
