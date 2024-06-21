@@ -12,18 +12,10 @@ require "debugcommands"
 
 modimport "util/env"
 
-local pcall, loadstring, Ents, Vector3 = G.pcall, G.loadstring, G.Ents, G.Vector3
-local TheInput = G.TheInput
-
 DEBUG = not modname:find("^workshop-")
-
--- dprint does nothing on workshop release version
-env.dprint = DEBUG and print or function() end
-
-ConsolePP = G.ConsolePP or {}
-
 IS_DEDICATED = TheNet:IsDedicated()
 
+ConsolePP = G.ConsolePP or {}
 ConsolePP.save = ConsolePP.save or {}
 ConsolePP.tmp = setmetatable({}, {__mode = "v"})
 ConsolePP.env = env
@@ -98,7 +90,6 @@ local FEATURES = {
     "cpm_quiet_server_pause_messages",
     "cpm_config_screen",
     "cpm_hot_reload",
-    -- "cpm_wordpredictionwidget", -- This is basically unneeded now (klei updates)
 }
 
 local modules = {}
