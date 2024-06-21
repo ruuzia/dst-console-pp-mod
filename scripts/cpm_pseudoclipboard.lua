@@ -16,7 +16,7 @@ Hook(ConsoleScreen, "OnRawKeyHandler", function (orig, screen, key, down, ...)
     if key == KEY_C and TheInput:IsKeyDown(KEY_CTRL)
         and not TheInput:IsKeyDown(KEY_ALT) -- In case keyboard layouts that use C
     then
-        TheSim:SetPersistentString(PSEUDO_CLIPBOARD_FILE, '\n'..self:GetString(), false, function (succ)
+        TheSim:SetPersistentString(PSEUDO_CLIPBOARD_FILE, '\n'..screen:GetString(), false, function (succ)
             if succ then
                 Log("Console contents saved to "..PSEUDO_CLIPBOARD_FILE.."!")
             else
