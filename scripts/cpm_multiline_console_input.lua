@@ -66,8 +66,10 @@ Hook(ConsoleScreen, "_ctor", function(constructor, self, ...)
     local _OnTextInput = self.console_edit.OnTextInput
     self.console_edit.OnTextInput = function(console_edit, text, ...)
         if text == "\n" and not ShouldAllowNewline(console_edit) then
-            -- Pass to screen
-            console_edit:OnProcess()
+            -- we have to wait for OnControl and up
+            -- otherwise, upon closing the console, it will also register
+            -- a click for whatever happens to be beneath the mouse
+            -- console_edit:OnProcess()
             return false
         end
         local ret = _OnTextInput(console_edit, text, ...)
@@ -81,12 +83,22 @@ Hook(ConsoleScreen, "_ctor", function(constructor, self, ...)
         return unpack(ret)
     end
 
-    local _OnRawKey
-end)
+    local _OnControl = self.console_edit.OnControl
+    self.console_edit.OnControl = function (console_edit, control, down, ...)
+        -- First check if someone else needs to do something with the control
+        local handled = _OnControl(console_edit, control, down, ...)
+        if not handled
+            and control == G.CONTROL_ACCEPT
+            and not down
+            and not ShouldAllowNewline(console_edit)
+        then
+            console_edit:OnProcess()
+            return true
+        end
+        return handled
+    end
 
--- Hijack Enter instead of making the screen close
-Hook(ConsoleScreen, "OnTextEntered", function (orig, screen, ...)
-    return orig(screen, ...)
+    local _OnRawKey
 end)
 
 return {
