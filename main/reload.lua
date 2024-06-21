@@ -84,7 +84,7 @@ function G.d_cpm_reload(silent)
     local console_open = false
     if not IS_DEDICATED and TheFrontEnd:GetActiveScreen().name == "ConsoleScreen" then
         console_open = true
-        TheFrontEnd:PopScreen(TheFrontEnd:GetActiveScreen())
+        TheFrontEnd:GetActiveScreen():Close()
     end
     Impurities:Purge()
     ModManager:FrontendUnloadMod(modname)
