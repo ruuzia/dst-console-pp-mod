@@ -6,7 +6,7 @@ local G = GLOBAL
 function Hook(loc, idx, wrapper)
     local orig = modassert(loc[idx], "no decorator function")
     assert(type(orig) == "function")
-    Impurities:New(loc, idx, orig)
+    Impurities:New(loc, idx)
     loc[idx] = function(...)
         return wrapper(orig, ...)
     end

@@ -8,19 +8,19 @@ Impurities = {}
 
 -- location keys are weak
 -- If the modified table no longer exists, we can freely forget it
-Impurities.items = {}
+Impurities.items = setmetatable({}, { __mode = "k" })
 
 Impurities.requires = {}
 
 ---@param loc table
 ---@param key any index of loc
----@param origin any? the original value (default to current)
 ---@return any current value of loc[key]
-function Impurities:New(loc, key, orig)
-    orig = assert(orig or loc[key], "currently we need a truthy original value")
+function Impurities:New(loc, key)
     self.items[loc] = self.items[loc] or {}
+    -- Don't add if already added!
     if not self.items[loc][key] then
-        self.items[loc][key] = orig
+        -- Boxing the value in a table to support nil values
+        self.items[loc][key] = { loc[key] }
     end
     return loc[key]
 end
@@ -29,16 +29,15 @@ function Impurities:Restore(loc, key)
     local item = self.items[loc]
     if not item then return end          -- Keys (the locations) are weak,
                                          --   Could have been already been GC'd
-    loc[key] = item[key]                 -- Restore the value
+    loc[key] = item[key][1]              -- Restore the value
     item[key] = nil                      -- Discard the impurity
 end
 
-function Impurities:Reset()
+function Impurities:Purge()
     for loc, item in pairs(self.items) do
         for k, orig in pairs(item) do
-            Log("Restoring %q in %q", k, tostring(loc))
             -- Restore
-            loc[k] = orig
+            loc[k] = orig[1]
         end
     end
     -- Leave behind trash for garbage collector and start anew
@@ -83,7 +82,7 @@ function G.d_cpm_reload(silent)
         console_open = true
         TheFrontEnd:PopScreen(TheFrontEnd:GetActiveScreen())
     end
-    Impurities:Reset()
+    Impurities:Purge()
     ModManager:FrontendUnloadMod(modname)
 
     -- Reload modinfos
