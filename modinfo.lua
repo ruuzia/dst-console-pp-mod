@@ -255,13 +255,6 @@ configuration_options = {
     },
 }
 
-ADVANCED_CONFIG_START = #configuration_options+1
-
-configuration_options[ADVANCED_CONFIG_START] = Header {
-    label = "=== Advanced ===",
-    name = "titleAdvancedWarning",
-}
-
 configuration_options[#configuration_options+1] = Header {
     label = "󰀖 Disable modules",
     name = "titleDisableFeatures",
@@ -281,6 +274,11 @@ for i = 1, #FEATURES do
         }
     end
 end
+
+configuration_options[#configuration_options+1] = Header {
+    label = "=== Advanced ===",
+    name = "titleAdvancedWarning",
+}
 
 configuration_options[#configuration_options+1] = Header {
     label = "󰀀  All modules",
