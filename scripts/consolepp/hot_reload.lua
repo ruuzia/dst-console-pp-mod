@@ -37,9 +37,9 @@ function ConsolePP.HotReload(silent)
     ModManager:FrontendUnloadMod(modname)
 
     -- Reload modinfos
-    -- KnownModIndex:UpdateSingleModInfo(modname)
-    -- KnownModIndex.savedata.known_mods[modname].modinfo = KnownModIndex:LoadModInfo(modname)
-    -- KnownModIndex:LoadModConfigurationOptions(modname)
+    KnownModIndex:UpdateSingleModInfo(modname)
+    KnownModIndex.savedata.known_mods[modname].modinfo = KnownModIndex:LoadModInfo(modname)
+    KnownModIndex:LoadModConfigurationOptions(modname)
 
     -- (These only exist when isworldgen or isfrontend is set)
     local isworldgen = CHARACTERLIST == nil
