@@ -5,6 +5,9 @@ local G = GLOBAL
 local ConsoleScreen = require "screens/consolescreen"
 local TextButton = require "widgets/textbutton"
 
+-- Requires scrollable log
+Require "consolepp.scrollable_log"
+
 --- Get the active shard
 ---@return string|nil name of the current shard
 local function ActiveShard()
