@@ -1,4 +1,5 @@
 setfenv(1, ConsolePP.env)
+local G = GLOBAL
 
 local ModConfigurationScreen = require "screens/redux/modconfigurationscreen"
 function ConsolePP.Config()
@@ -6,6 +7,6 @@ function ConsolePP.Config()
 end
 
 -- TODO: deprecate
-G.c_config = Console.Config
+G.c_config = ConsolePP.Config
 
 return {}
