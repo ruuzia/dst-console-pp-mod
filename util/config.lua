@@ -59,6 +59,9 @@ end
 function Config:SetAutocomplete(enabled)
     Config.AUTOCOMPLETING = enabled
 end
+function Config:SetAutocompleteFields(enabled)
+    Config.COMPLETINGFIELDS = enabled
+end
 
 function Config:Update()
     Config:SetKeepOpenWithoutCtrl (GetModConfigData("keepopen", true))
@@ -72,8 +75,13 @@ function Config:Update()
     Config:SetCaseSensitive       (GetModConfigData("casesensitive", true))
     Config:SetConsoleLogTheme     (GetModConfigData("logtheme", true))
     Config:SetAutocomplete        (GetModConfigData("autocomplete", true))
+    Config:SetAutocompleteFields  (GetModConfigData("autocompletefields", true))
 
     Config.IGNORES = {["Server Unpaused"] = true, ["Server Autopaused"] = true, ["Server Paused"] = false}
+end
+
+function Config:IsFeatureEnabled(name)
+    return GetModConfigData("module:"..name, true)
 end
 
 Config:Update()

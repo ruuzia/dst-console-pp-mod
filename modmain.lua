@@ -44,40 +44,30 @@ Assets = {
 ------------------------------------------------------------
 
 local FEATURE_PATH = "consolepp/"
-local FEATURES = {
-    "use_last_remote_toggle",
-    "textedit_click_to_position",
-    "dynamic_completion",
-    "multiline_console_input",
-    "keep_open",
-    "expression_eval",
-    "scrollable_log",
-    "shard_logs",
-    "console_commands",
-    "text_navigation",
-    "pseudoclipboard",
-    "tab_insertion",
-    "arrow_keys_move_between_lines",
-    "completion_key_config",
-    "arrow_keys_move_between_lines",
-    "quiet_server_pause_messages",
-    "config_screen",
-    "hot_reload",
-}
 
 local modules = {}
 
-for _, module in ipairs(FEATURES) do
-    Log("Loading feature module %q", module)
-    local ok, result = pcall(Require, FEATURE_PATH..module)
-    if not ok then
-        Log("Failed to load module: %q", module)
-        moderror(result)
-    else
-        result = result or {}
-        result.name = module
-        table.insert(modules, result)
+local function LoadModules()
+    for _, feature in ipairs(modinfo.FEATURES) do
+        if Config:IsFeatureEnabled(feature.name) then
+            Log("Loading feature module %q", feature.name)
+            local ok, result = pcall(Require, FEATURE_PATH..feature.name)
+            if not ok then
+                Log("Failed to load module: %q", feature.name)
+                moderror(result)
+            else
+                result = result or {}
+                result.name = feature.name
+                table.insert(modules, result)
+            end
+        end
     end
+end
+
+LoadModules()
+
+function IsFeatureLoaded(name)
+    return G.package.loaded[FEATURE_PATH..name] ~= nil
 end
 
 function GetFeatureModules()

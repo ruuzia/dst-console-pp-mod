@@ -109,7 +109,7 @@ local function TryComplete(wp, text, cursor_pos, remote_execute)
 
     if indexer == '.' or indexer == ':' then
         -- Chain index completion (e.g: tree.apple.components.juiceable:Squeez)
-        if running_in_client then
+        if running_in_client and Config.COMPLETINGFIELDS then
             local indices, exprstart = Predictor.FindTable(str)
             if indices then
                 local matches = Predictor.GetPossibleKeys(indices, G.ThePlayer)
@@ -119,7 +119,7 @@ local function TryComplete(wp, text, cursor_pos, remote_execute)
                 end
                 ForceWordPrediction(wp, str, exprstart, matches)
             end
-        else
+        elseif Config.COMPLETINGFIELDS then
             SetCompletionRequestTask(function()
                 SendModRPCToServer(GetModRPC(RPC_NAMESPACE, "RequestCompletions"), str)
             end)

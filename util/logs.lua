@@ -70,10 +70,12 @@ function LogHistory:SetUpdatingClient(update)
     self.print_loggers[#self.print_loggers+1] = self.client_logger
 end
 
-Hook (require"screens/redux/servercreationscreen", "Create", function (orig, scrn, ...)
-    TheSim:SetPersistentString("slot", tostring(scrn.save_slot))
-    return orig(scrn, ...)
-end)
+local ServerCreationScreen = require"screens/redux/servercreationscreen"
+local _Create = ServerCreationScreen.Create
+ServerCreationScreen.Create = function (self, ...)
+    TheSim:SetPersistentString("slot", tostring(self.save_slot))
+    return orig(self, ...)
+end
 
 function LogHistory:UpdateClusterLog(shard, onupdated)
     if modinfo.client_only_mod or TheNet:GetIsServer() then
