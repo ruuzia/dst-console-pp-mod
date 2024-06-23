@@ -26,7 +26,7 @@ end)
 return {
     tests = {
         ["test saving last remote"] = function ()
-            Impurities:New(Config, "KEEPCONSOLEOPEN", false)
+            Impurities:Set(Config, "KEEPCONSOLEOPEN", false)
             if not TheNet:GetIsClient() then
                 Log("Must be client in server to run this test")
                 return

@@ -105,7 +105,7 @@ return {
         -- Maybe we just keep it as the last module to load/run tests
         ["test hot reload"] = function ()
             G.global "_CPM_world_universe_everything"
-            Impurities:New(G, "_CPM_world_universe_everything", 42)
+            Impurities:Set(G, "_CPM_world_universe_everything", 42)
             G.ConsolePP.HotReload()
             AssertEq(G._CPM_world_universe_everything, nil)
         end

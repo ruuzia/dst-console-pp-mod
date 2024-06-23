@@ -7,7 +7,7 @@ local function SorryICantHearYou(...)
 end
 
 Hook(G, "OnServerPauseDirty", function (orig, ...)
-    Impurities:New(G, "print", SorryICantHearYou)
+    Impurities:Set(G, "print", SorryICantHearYou)
     local ret = { orig(...) }
     Impurities:Restore(G, "print")
     return unpack(ret)

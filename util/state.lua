@@ -13,7 +13,7 @@ end)
 ---@param key any index of loc
 ---@param new_value any|nil
 ---@return any current value of loc[key]
-function State:New(loc, key, new_value)
+function State:Set(loc, key, new_value)
     self.locations[loc] = self.locations[loc] or {}
     -- Don't add if already added!
     if not self.locations[loc][key] then

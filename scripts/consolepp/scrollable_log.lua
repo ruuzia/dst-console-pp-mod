@@ -32,12 +32,12 @@ Hook(ConsoleScreen, "_ctor", function (constructor, screen, ...)
     screen.console_edit:SetPassControlToScreen(G.CONTROL_SCROLLFWD, true)
 
     -- Temporarily override ShowConsoleLog and HideConsoleLog
-    Impurities:New(TheFrontEnd, "ShowConsoleLog", function (frontend)
+    Impurities:Set(TheFrontEnd, "ShowConsoleLog", function (frontend)
         -- Pretend vanilla consoletext is shown
         frontend.consoletext.shown = true
         screen._cpm_scrollable_log:Show()
     end)
-    Impurities:New(TheFrontEnd, "HideConsoleLog", function (frontend)
+    Impurities:Set(TheFrontEnd, "HideConsoleLog", function (frontend)
         frontend.consoletext.shown = false
         screen._cpm_scrollable_log:Hide()
     end)
@@ -89,7 +89,7 @@ end)
 return {
     tests = {
         ["test open console with log"] = function ()
-            Impurities:New(Config, "OPENLOGWITHCONSOLE", true)
+            Impurities:Set(Config, "OPENLOGWITHCONSOLE", true)
             local screen = Tester.OpenConsole()
             AssertEq(TheFrontEnd.consoletext.shown, true)
             AssertEq(screen._cpm_scrollable_log.shown, true)

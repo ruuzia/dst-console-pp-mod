@@ -36,16 +36,16 @@ end)
 return {
     tests = {
         function ()
-            Impurities:New(Config, "TABSPACES", 7)
-            local screen = Tester.OpenConsole()
+            local temp = State()
+            temp:New(Config, "TABSPACES", 7)
 
+            local screen = Tester.OpenConsole()
             Tester.SendKey(KEY_TAB)
             AssertEq(screen.console_edit:GetString(), "       ")
             Tester.SendKey(KEY_BACKSPACE)
             AssertEq(screen.console_edit:GetString(), "")
 
-            Tester.CloseConsole()
-            Impurities:Restore(Config, "TABSPACES")
+            temp:Purge()
         end
     }
 }

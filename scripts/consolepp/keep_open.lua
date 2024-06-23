@@ -39,7 +39,7 @@ return {
     tests = {
         -- Test for bug where history idx was off
         ["test history updates properly on force run"] = function ()
-            Impurities:New(Config, "KEEPCONSOLEOPEN", true)
+            Impurities:Set(Config, "KEEPCONSOLEOPEN", true)
             local screen = Tester.OpenConsole()
             screen:ToggleRemoteExecute(true)
 
