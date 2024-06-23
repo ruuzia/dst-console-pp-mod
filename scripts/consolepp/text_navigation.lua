@@ -53,7 +53,7 @@ Hook(TextEdit, "OnRawKey", function(orig, self, key, down)
             local pos = self.inst.TextEditWidget:GetEditCursorPos()
             if pos == 0 then return false end
             local ptrn = "["..Config.WORDSET.."]*[^"..Config.WORDSET.."]*$"
-            local i = str:sub(1, pos-1):find(ptrn)
+            local i = str:sub(1, pos):find(ptrn)
             self.inst.TextEditWidget:SetEditCursorPos(i-1)
             ForceFocusTextEditCursor(self)
             return true
