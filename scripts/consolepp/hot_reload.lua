@@ -99,4 +99,15 @@ AddClientModRPCHandler(RPC_NAMESPACE, "hotreload", function()
     ConsolePP.HotReload()
 end)
 
-return {}
+return {
+    tests = {
+        -- Won't hot reloading mid tests cause issues with testing?
+        -- Maybe we just keep it as the last module to load/run tests
+        ["test hot reload"] = function ()
+            G.global "_CPM_world_universe_everything"
+            Impurities:New(G, "_CPM_world_universe_everything", 42)
+            G.ConsolePP.HotReload()
+            AssertEq(G._CPM_world_universe_everything, nil)
+        end
+    }
+}
