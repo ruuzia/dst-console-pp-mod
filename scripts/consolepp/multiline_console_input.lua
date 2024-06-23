@@ -60,16 +60,16 @@ local function BuildFancyConsoleInput(screen)
 end
 
 -- Screen init post-hook
-Hook(ConsoleScreen, "_ctor", function(constructor, self, ...)
-    constructor(self, ...)
-    BuildFancyConsoleInput(self)
+Hook(ConsoleScreen, "_ctor", function(constructor, screen, ...)
+    constructor(screen, ...)
+    BuildFancyConsoleInput(screen)
 
     -- Allow newline (but we add a hook in OnTextInput)
-    self.console_edit:SetAllowNewline(true)
+    screen.console_edit:SetAllowNewline(true)
 
     -- Post hook on console input changes
-    local _OnTextInput = self.console_edit.OnTextInput
-    self.console_edit.OnTextInput = function(console_edit, text, ...)
+    local _OnTextInput = screen.console_edit.OnTextInput
+    screen.console_edit.OnTextInput = function(console_edit, text, ...)
         if text == "\n" and not ShouldAllowNewline(console_edit) then
             -- we have to wait for OnControl and up
             -- otherwise, upon closing the console, it will also register
@@ -78,18 +78,18 @@ Hook(ConsoleScreen, "_ctor", function(constructor, self, ...)
             return false
         end
         local ret = _OnTextInput(console_edit, text, ...)
-        OnTextUpdate(self)
+        OnTextUpdate(screen)
         return ret
     end
-    local _OnSetString = self.console_edit.SetString
-    self.console_edit.SetString = function (console_edit, str, ...)
+    local _OnSetString = screen.console_edit.SetString
+    screen.console_edit.SetString = function (console_edit, str, ...)
         local ret = { _OnSetString(console_edit, str, ...) }
-        OnTextUpdate(self)
+        OnTextUpdate(screen)
         return unpack(ret)
     end
 
-    local _OnControl = self.console_edit.OnControl
-    self.console_edit.OnControl = function (console_edit, control, down, ...)
+    local _OnControl = screen.console_edit.OnControl
+    screen.console_edit.OnControl = function (console_edit, control, down, ...)
         -- Shift+Enter should prioritize new line over accepting completion
         if control == G.CONTROL_ACCEPT
             and down
@@ -113,9 +113,9 @@ Hook(ConsoleScreen, "_ctor", function(constructor, self, ...)
     end
 
     -- Keep prediction_widget from claiming that Shift+Enter!
-    Hook(self.console_edit, "OnRawKey", function (orig, console_edit, key, down, ...)
+    Hook(screen.console_edit, "OnRawKey", function (orig, console_edit, key, down, ...)
         if key == KEY_ENTER and down and ShouldForceNewline(console_edit) then
-            self:OnTextInput("\n")
+            console_edit:OnTextInput("\n")
             return true
         end
         return orig(console_edit, key, down, ...)
