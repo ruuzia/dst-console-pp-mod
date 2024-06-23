@@ -1,22 +1,19 @@
 local G = GLOBAL
-local ConsoleScreen = require "screens/consolescreen"
-local KnownModIndex = G.KnownModIndex
-local ModManager = G.ModManager
-local setmetatable = G.setmetatable
 
-Impurities = {}
+State = Class(function (self)
+    -- location keys are weak
+    -- If the modified table no longer exists, we can freely forget it
+    self.locations = setmetatable({}, { __mode = "k" })
 
--- location keys are weak
--- If the modified table no longer exists, we can freely forget it
-Impurities.locations = setmetatable({}, { __mode = "k" })
+    self.requires = {}
 
-Impurities.requires = {}
+end)
 
 ---@param loc table
 ---@param key any index of loc
 ---@param new_value any|nil
 ---@return any current value of loc[key]
-function Impurities:New(loc, key, new_value)
+function State:New(loc, key, new_value)
     self.locations[loc] = self.locations[loc] or {}
     -- Don't add if already added!
     if not self.locations[loc][key] then
@@ -29,7 +26,7 @@ function Impurities:New(loc, key, new_value)
     return loc[key]
 end
 
-function Impurities:Restore(loc, key)
+function State:Restore(loc, key)
     local item = self.locations[loc]
     if not item or not item[key] then return end          -- Keys (the locations) are weak,
                                          --   Could have been already been GC'd
@@ -37,7 +34,7 @@ function Impurities:Restore(loc, key)
     item[key] = nil                      -- Discard the impurity
 end
 
-function Impurities:Purge()
+function State:Purge()
     for loc, item in pairs(self.locations) do
         for k, orig in pairs(item) do
             -- Restore
@@ -54,7 +51,8 @@ function Impurities:Purge()
     end
 end
 
-function Impurities:Package(name)
+function State:Package(name)
     table.insert(self.requires, name)
 end
 
+Impurities = State()
