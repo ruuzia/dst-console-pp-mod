@@ -59,6 +59,21 @@ return {
             AssertEq(screen.console_edit:GetString(), "")
 
             temp:Purge()
+        end,
+        ["test tab in middle of line"] = function ()
+            local temp = State()
+            temp:Set(Config, "TABSPACES", 4)
+            temp:Set(Config, "TABINSERT", true)
+
+            local screen = Tester.OpenConsole()
+            Tester.SendTextInput("--foo")
+            Tester.SendKey(KEY_TAB)
+            AssertEq(screen.console_edit:GetString(), "--foo")
+            Tester.SendTextInput("  ")
+            Tester.SendKey(KEY_BACKSPACE)
+            AssertEq(screen.console_edit:GetString(), "--foo ")
+
+            temp:Purge()
         end
     }
 }
