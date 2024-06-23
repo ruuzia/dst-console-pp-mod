@@ -11,7 +11,6 @@ Hook(TextEdit, "OnRawKey", function(orig, self, key, down)
     if down then
         if (key == KEY_BACKSPACE or key == KEY_DELETE) and TheInput:IsKeyDown(KEY_LSUPER) then
             local str = self:GetString()
-            self.cpm_undo = str
             local pos = self.inst.TextEditWidget:GetEditCursorPos()
             local i = StrGetLineStart(str, pos)
             self:SetString(str:sub(1, i-1) .. str:sub(pos+1))
@@ -21,7 +20,6 @@ Hook(TextEdit, "OnRawKey", function(orig, self, key, down)
         elseif key == KEY_BACKSPACE and ctrl_down then
             local str = self:GetString()
             local pos = self.inst.TextEditWidget:GetEditCursorPos()
-            self.cpm_undo = str
             if pos > 0 then
                 local ptrn = "["..Config.WORDSET.."]*[^"..Config.WORDSET.."]*$"
                 local i = str:sub(1, pos-1):find(ptrn)
@@ -87,4 +85,43 @@ Hook(TextEdit, "OnRawKey", function(orig, self, key, down)
     return orig(self, key, down)
 end)
 
-return {}
+return {
+    tests = {
+        ["test command-backspace delete line"] = function ()
+            local screen = Tester.OpenConsole()
+            Tester.SendTextInput("hello\nhow are you today")
+            Tester.WithKeysDown({ KEY_LSUPER }, Tester.SendKey, KEY_BACKSPACE)
+            AssertEq(screen.console_edit:GetString(), "hello\n")
+        end,
+
+        ["test ctrl-backspace delete word"] = function ()
+            local screen = Tester.OpenConsole()
+            Tester.SendTextInput("the quick brown box")
+            Tester.WithKeysDown({ KEY_LCTRL }, Tester.SendKey, KEY_BACKSPACE)
+            Tester.SendTextInput("fox")
+            AssertEq(screen.console_edit:GetString(), "the quick brown fox")
+        end,
+
+        ["test tab with Config.TABNEXT"] = function ()
+            local temp = State()
+            temp:Set(Config, "TABNEXT", true)
+            temp:Set(Config, "TABCOMPLETE", false)
+            do
+                local screen = Tester.OpenConsole()
+                Tester.SendTextInput("c_sel")
+                Tester.SendKey(KEY_TAB)
+                Tester.SendKey(KEY_TAB)
+                Tester.SendKey(KEY_TAB)
+                Tester.WithKeysDown({ KEY_LCTRL }, Tester.SendKey, KEY_TAB)
+            end
+            temp:Purge()
+        end,
+
+        -- ["test ctrl-left and ctrl-right"] = function ()
+        --     local screen = Tester.OpenConsole()
+        --     Tester.SendTextInput("foo().components.bar .baz = 42")
+        --     Tester.WithKeysDown({ KEY_CTRL }, Tester.SendKey, KEY_LEFT)
+        --     Tester.WithKeysDown({ KEY_CTRL }, Tester.SendKey, KEY_LEFT)
+        -- end,
+    }
+}
