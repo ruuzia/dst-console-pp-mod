@@ -39,7 +39,7 @@ function State:Purge()
         for k, orig in pairs(item) do
             -- Restore
             loc[k] = orig[1]
-            Log("Restoring %s", k)
+            -- Log("Restoring %s", k)
         end
     end
     -- Leave behind trash for garbage collector and start anew
