@@ -44,16 +44,8 @@ local function LogButton(screen, onactivate, label, color)
     btn._cpm_activate = onactivate
     btn:SetOnClick(function()
         screen.console_edit:SetEditing(true)
-        local log = screen._cpm_scrollable_log
-        if log then
-            -- Toggle log
-            if TheFrontEnd.consoletext.shown and log.history.name == label then
-                TheFrontEnd:HideConsoleLog()
-            else
-                onactivate()
-                TheFrontEnd:ShowConsoleLog()
-            end
-        end
+        onactivate()
+        TheFrontEnd:ShowConsoleLog()
     end)
     btn:SetText(label)
     btn:SetTextColour(color)
@@ -71,6 +63,30 @@ local function LogButton(screen, onactivate, label, color)
     return btn
 end
 
+local MAX_FRONTEND_CONSOLE_LINES = 20
+
+local function ShowLog(screen, logHistory, color)
+    if screen._cpm_scrollable_log then
+        screen._cpm_scrollable_log.history = logHistory
+        screen._cpm_scrollable_log:SetTextColour(unpack(color))
+        screen._cpm_scrollable_log:RefreshWidgets(true)
+    end
+
+    -- Don't sync with frontend log for now because we don't update
+    -- periodically
+    --
+    -- Hook(TheFrontEnd, "UpdateConsoleOutput", function (orig, self)
+    --     orig(self)
+    --
+    --     local lines = {}
+    --     for i = #logHistory - MAX_FRONTEND_CONSOLE_LINES + 1, #logHistory do
+    --         table.insert(lines, logHistory[i])
+    --     end
+    --     self.consoletext:SetString(table.concat(lines, "\n"))
+    --     self.consoletext:SetColour(color)
+    -- end)
+end
+
 -- Add shard butons to console screen UI
 Hook(ConsoleScreen, "_ctor", function (constructor, screen, ...)
     constructor(screen, ...)
@@ -85,10 +101,7 @@ Hook(ConsoleScreen, "_ctor", function (constructor, screen, ...)
     local y = 210
     do
         local btn = staticroot:AddChild(LogButton(screen, function ()
-            local log = screen._cpm_scrollable_log
-            log.history = Logs.client
-            log:RefreshWidgets(true)
-            log:SetTextColour(unpack(G.PORTAL_TEXT_COLOUR))
+            ShowLog(screen, Logs.client, G.PORTAL_TEXT_COLOUR)
             return true
         end, "Client", G.PORTAL_TEXT_COLOUR))
         table.insert(shard_buttons, btn)
@@ -98,12 +111,9 @@ Hook(ConsoleScreen, "_ctor", function (constructor, screen, ...)
 
     for i, shard in ipairs {"Master", "Caves"} do
         local btn = staticroot:AddChild(LogButton(screen, function ()
-            local log = screen._cpm_scrollable_log
             Logs:UpdateClusterLog(shard, function()
-                log:RefreshWidgets(true)
+                ShowLog(screen, Logs.cluster[shard], Config.SHARD_LOG_COLOURS[shard])
             end)
-            log.history = Logs.cluster[shard]
-            log:SetTextColour(unpack(Config.SHARD_LOG_COLOURS[shard]))
             return true
         end, shard, Config.SHARD_LOG_COLOURS[shard]))
         btn:SetPosition(x + i * 100, y)
