@@ -165,5 +165,16 @@ return {
             AssertEq(screen.console_edit:GetString(), "foo().components.bar.baz = 42")
             AssertEq(screen.console_edit.inst.TextEditWidget:GetEditCursorPos(), #"foo().components.bar.baz = 42")
         end,
+
+        ["test home and end keys"] = function ()
+            local screen = Tester.OpenConsole()
+            Tester.SendTextInput("the quick brown\njumps over")
+            Tester.SendKey(KEY_HOME)
+            Tester.SendKey(KEY_BACKSPACE)
+            Tester.SendTextInput(" fox ")
+            Tester.SendKey(KEY_END)
+            Tester.SendTextInput(" the lazy dog")
+            AssertEq(screen.console_edit:GetString(), "the quick brown fox jumps over the lazy dog")
+        end,
     }
 }
