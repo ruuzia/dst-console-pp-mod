@@ -2,38 +2,6 @@ local G = GLOBAL
 local xpcall = G.xpcall
 local debug = G.debug
 
-local tests = {
-    "test/test_history",
-}
-
-local function Run(name)
-    print("Running test: "..env.MODROOT..name)
-    if string.sub(name, #name-3,#name) ~= ".lua" then
-        name = name..".lua"
-    end
-    local result = G.kleiloadlua(env.MODROOT..name)
-
-    if result == nil then
-        print("Error loading test: "..name.." not found!")
-        return
-    elseif type(result) == "string" then
-        print("Error loading test: "..ModInfoname(modname).." importing "..name.."!\n"..result)
-        return
-    end
-
-    G.setfenv(result, env.env)
-
-    local ok = xpcall(result, function(err)
-        print("FAIL", err)
-    end)
-    if ok then
-    else
-        print("Test failed: "..name)
-    end
-
-    return ok
-end
-
 function Log(msg, ...)
     print("[Console++] "..msg:format(...))
 end
@@ -47,50 +15,71 @@ function Assert(test, message)
     G.error("[Console++] Assert failed: "..message, 2)
 end
 
+local function Describe(value)
+    if type(value) == "string" then
+        return ("%q"):format(value)
+    else
+        return tostring(value)
+    end
+end
 function AssertEq(value, expected)
     if value == expected then return end
-    G.error("Expected "..tostring(expected).." but got "
-        ..tostring(value), 2)
+    local info = debug.getinfo(2)
+    G.error(("Assert failed: expected %s but got %s\nNOTE: failed at %s:%s"):format(Describe(expected), Describe(value), info.source, info.currentline), 3)
 end
 
 Tester = {}
 
+Tester.FAIL = "fail"
+Tester.CONDITIONS_NOT_MET = "conditions_not_met"
+Tester.SUCCESS = "success"
+
+local function Run(fn)
+    local ok, result = xpcall(fn, function(err)
+        Log("FAIL: %s\n%s", tostring(err), G.debugstack(2))
+    end)
+    if not ok then return Tester.FAIL end
+    return result or Tester.SUCCESS
+end
+
 local function _RunTestsForModule(_, module)
     Log("Running tests for module %q", module.name)
     for test_name, fn in pairs(module.tests or {}) do
-        local ok = xpcall(fn, function(err)
-            Log("FAIL: %s\n%s", tostring(err), G.debugstack(3))
-        end)
-        if ok then
+        local result = Run(fn)
+        if result == Tester.SUCCESS then
             Log("Test succeeded: "..test_name)
-        else
+        elseif result == Tester.FAIL then
             Log("Test failed: "..test_name)
+        elseif result == Tester.CONDITIONS_NOT_MET then
+            Log("Could not run test: conditions not met")
+        else
+            Log("ERROR: unknown result type %q", result)
         end
     end
 end
 
 local function _RunTests()
-    local count_succeeded = 0
-    local count_failed = 0
+    local counts = {
+        [Tester.SUCCESS] = 0,
+        [Tester.FAIL] = 0,
+        [Tester.CONDITIONS_NOT_MET] = 0,
+    }
     for _, module in ipairs(GetFeatureModules()) do
         if not module.tests then
             Log("WARNING: no tests for module %q", module.name)
         end
         Log("Running tests for module %q", module.name)
         for test_name, fn in pairs(module.tests or {}) do
-            local ok = xpcall(fn, function(err)
-                Log("FAIL: %s\n%s", tostring(err), G.debugstack(3))
-            end)
-            if ok then
-                count_succeeded = count_succeeded + 1
-            else
+            local result = Run(fn)
+            counts[result] = counts[result] + 1
+            if result == Tester.FAIL then
                 Log("Test failed: "..test_name)
-                count_failed = count_failed + 1
             end
         end
     end
-    print(count_succeeded.." tests succeeded.")
-    print(count_failed.." tests failed.")
+    print(counts[Tester.SUCCESS].." tests succeeded.")
+    print(counts[Tester.FAIL].." tests failed.")
+    print(counts[Tester.CONDITIONS_NOT_MET].." test conditions not met.")
 end
 
 function RunTestsForModule(name)
