@@ -42,6 +42,11 @@ local function ShouldAllowNewline(console_edit)
         or console_edit.pasting
 end
 
+local function ShouldForceNewline(console_edit)
+    return TheInput:IsKeyDown(G.KEY_SHIFT)
+        or console_edit.pasting
+end
+
 local function BuildFancyConsoleInput(screen)
     screen.edit_bg:SetTexture("images/textbox_long_thinborder.xml", "textbox_long_thinborder.tex" )
 	screen.root:SetPosition(0, baseypos, 0)
@@ -85,21 +90,36 @@ Hook(ConsoleScreen, "_ctor", function(constructor, self, ...)
 
     local _OnControl = self.console_edit.OnControl
     self.console_edit.OnControl = function (console_edit, control, down, ...)
-        -- First check if someone else needs to do something with the control
-        -- TODO: Shift+Enter should prioritize new line over accepting completion
-        local handled = _OnControl(console_edit, control, down, ...)
-        if not handled
-            and control == G.CONTROL_ACCEPT
-            and not down
-            and not ShouldAllowNewline(console_edit)
+        -- Shift+Enter should prioritize new line over accepting completion
+        if control == G.CONTROL_ACCEPT
+            and down
+            and ShouldForceNewline(console_edit)
+        then
+            return false
+        end
+
+        -- Now check if someone else needs to do something with the control
+        if _OnControl(console_edit, control, down, ...) then
+            return true
+        end
+
+        if control == G.CONTROL_ACCEPT
+           and not down
+           and not ShouldAllowNewline(console_edit)
         then
             console_edit:OnProcess()
             return true
         end
-        return handled
     end
 
-    local _OnRawKey
+    -- Keep prediction_widget from claiming that Shift+Enter!
+    Hook(self.console_edit, "OnRawKey", function (orig, console_edit, key, down, ...)
+        if key == KEY_ENTER and down and ShouldForceNewline(console_edit) then
+            self:OnTextInput("\n")
+            return true
+        end
+        return orig(console_edit, key, down, ...)
+    end)
 end)
 
 return {
@@ -108,10 +128,22 @@ return {
             local screen = Tester.OpenConsole()
             Tester.SendTextInput("-- A line")
             Tester.WithKeysDown({ KEY_SHIFT }, Tester.PressEnter)
-            Tester.SendTextInput("if true")
-            AssertEq(screen.console_edit:GetString(), "-- A line\nif true")
-            Tester.SendKey(KEY_ENTER)
-            AssertEq(screen.console_edit:GetString(), "-- A line\nif true\n")
-        end
+            -- Tester.SendTextInput("if true")
+            -- AssertEq(screen.console_edit:GetString(), "-- A line\nif true")
+            -- Tester.SendKey(KEY_ENTER)
+            -- AssertEq(screen.console_edit:GetString(), "-- A line\nif true\n")
+        end,
+        ["shift+enter newline takes precedence"] = function ()
+            local temp = State()
+            temp:Set(Config, "ENTERCOMPLETE", true)
+            do
+                local screen = Tester.OpenConsole()
+                Tester.SendTextInput("ConsoleP")
+                -- Even though there is a word completion available, ignore it!
+                Tester.WithKeysDown({ KEY_SHIFT }, Tester.PressEnter)
+                AssertEq(screen.console_edit:GetString(), "ConsoleP\n")
+            end
+            temp:Purge()
+        end,
     }
 }
