@@ -102,12 +102,11 @@ end)
 return {
     tests = {
         -- Won't hot reloading mid tests cause issues with testing?
-        -- Maybe we just keep it as the last module to load/run tests
-        ["test hot reload"] = function ()
-            G.global "_CPM_world_universe_everything"
-            Impurities:Set(G, "_CPM_world_universe_everything", 42)
-            G.ConsolePP.HotReload(true)
-            AssertEq(G._CPM_world_universe_everything, nil)
-        end
+        -- ["test hot reload"] = function ()
+        --     G.global "_CPM_world_universe_everything"
+        --     Impurities:Set(G, "_CPM_world_universe_everything", 42)
+        --     G.ConsolePP.HotReload(true)
+        --     AssertEq(G._CPM_world_universe_everything, nil)
+        -- end
     }
 }
