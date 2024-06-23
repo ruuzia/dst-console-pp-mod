@@ -85,16 +85,30 @@ end)
 
 return {
     tests = {
-        function ()
+        ["test arrow keys move between lines"] = function ()
             local screen = Tester.OpenConsole()
 
-            Tester.SendTextInput("12345\nabc")
+            screen.console_edit:SetString("12345\nabc")
             Tester.SendKey(KEY_UP)
             AssertEq(screen.console_edit:GetString(), "12345\nabc")
             AssertEq(screen.console_edit.inst.TextEditWidget:GetEditCursorPos(), 3)
             Tester.SendKey(KEY_DOWN)
             AssertEq(screen.console_edit:GetString(), "12345\nabc")
             AssertEq(screen.console_edit.inst.TextEditWidget:GetEditCursorPos(), 9)
-        end
+        end,
+        ["test history still works"] = function ()
+            do
+                local screen = Tester.OpenConsole()
+                Tester.SendTextInput("-- beefalo")
+                screen:Run()
+            end
+            do
+                local screen = Tester.OpenConsole()
+                screen.console_edit:SetString("12345\nabc")
+                Tester.SendKey(KEY_UP)
+                Tester.SendKey(KEY_UP)
+                AssertEq(screen.console_edit:GetString(), "-- beefalo")
+            end
+        end,
     }
 }
