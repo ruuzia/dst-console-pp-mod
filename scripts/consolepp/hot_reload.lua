@@ -106,7 +106,7 @@ return {
         ["test hot reload"] = function ()
             G.global "_CPM_world_universe_everything"
             Impurities:Set(G, "_CPM_world_universe_everything", 42)
-            G.ConsolePP.HotReload()
+            G.ConsolePP.HotReload(true)
             AssertEq(G._CPM_world_universe_everything, nil)
         end
     }
