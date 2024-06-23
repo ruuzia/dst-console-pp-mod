@@ -73,8 +73,3 @@ end
 function GetFeatureModules()
     return modules
 end
-
-Hook(require("screens/consolescreen"), "_ctor", function (constructor, self, ...)
-    Config:Update()
-    return constructor(self, ...)
-end)
