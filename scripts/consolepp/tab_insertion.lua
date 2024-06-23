@@ -35,13 +35,26 @@ end)
 
 return {
     tests = {
-        function ()
+        ["test inserting deleting tabs"] = function ()
             local temp = State()
             temp:Set(Config, "TABSPACES", 7)
+            temp:Set(Config, "TABINSERT", true)
 
             local screen = Tester.OpenConsole()
             Tester.SendKey(KEY_TAB)
             AssertEq(screen.console_edit:GetString(), "       ")
+            Tester.SendKey(KEY_BACKSPACE)
+            AssertEq(screen.console_edit:GetString(), "")
+
+            temp:Purge()
+        end,
+        ["test config for disabling tabs"] = function ()
+            local temp = State()
+            temp:Set(Config, "TABINSERT", false)
+
+            local screen = Tester.OpenConsole()
+            Tester.SendKey(KEY_TAB)
+            AssertEq(screen.console_edit:GetString(), "")
             Tester.SendKey(KEY_BACKSPACE)
             AssertEq(screen.console_edit:GetString(), "")
 
