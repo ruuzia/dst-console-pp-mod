@@ -37,7 +37,7 @@ return {
     tests = {
         function ()
             local temp = State()
-            temp:New(Config, "TABSPACES", 7)
+            temp:Set(Config, "TABSPACES", 7)
 
             local screen = Tester.OpenConsole()
             Tester.SendKey(KEY_TAB)
