@@ -60,4 +60,11 @@ end
 -- TODO: deprecate
 G.c_config = ConsolePP.Config
 
-return {}
+return {
+    tests = {
+        ["test opening config screen"] = function ()
+            G.ConsolePP.Config()
+            TheFrontEnd:PopScreen()
+        end,
+    }
+}

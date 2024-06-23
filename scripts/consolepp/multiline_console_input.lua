@@ -86,6 +86,7 @@ Hook(ConsoleScreen, "_ctor", function(constructor, self, ...)
     local _OnControl = self.console_edit.OnControl
     self.console_edit.OnControl = function (console_edit, control, down, ...)
         -- First check if someone else needs to do something with the control
+        -- TODO: Shift+Enter should prioritize new line over accepting completion
         local handled = _OnControl(console_edit, control, down, ...)
         if not handled
             and control == G.CONTROL_ACCEPT
@@ -102,4 +103,15 @@ Hook(ConsoleScreen, "_ctor", function(constructor, self, ...)
 end)
 
 return {
+    tests = {
+        ["Test allows multiple lines"] = function ()
+            local screen = Tester.OpenConsole()
+            Tester.SendTextInput("-- A line")
+            Tester.WithKeysDown({ KEY_SHIFT }, Tester.PressEnter)
+            Tester.SendTextInput("if true")
+            AssertEq(screen.console_edit:GetString(), "-- A line\nif true")
+            Tester.SendKey(KEY_ENTER)
+            AssertEq(screen.console_edit:GetString(), "-- A line\nif true\n")
+        end
+    }
 }

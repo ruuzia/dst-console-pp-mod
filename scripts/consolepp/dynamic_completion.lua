@@ -184,16 +184,35 @@ end)
 return {
     tests = {
         ["test global word prediction"] = function ()
-            local screen = Tester.OpenConsole()
-            Tester.SendTextInput("ConsoleP")
-            local prediction_widget = screen.console_edit.prediction_widget
-            Assert(#prediction_widget.prediction_btns > 0)
-            AssertEq(screen.console_edit:GetString(), "ConsoleP")
-            AssertEq(prediction_widget.prediction_btns[1]:GetText(), "ConsolePP")
-            -- Accept completion
-            Tester.PressEnter()
-            AssertEq(screen.console_edit:GetString(), "ConsolePP")
-            AssertEq(#prediction_widget.prediction_btns, 0)
+            local temp = State()
+            temp:Set(Config, "ENTERCOMPLETE", true)
+            do
+                local screen = Tester.OpenConsole()
+                Tester.SendTextInput("ConsoleP")
+                local prediction_widget = screen.console_edit.prediction_widget
+                Assert(#prediction_widget.prediction_btns > 0)
+                AssertEq(screen.console_edit:GetString(), "ConsoleP")
+                AssertEq(prediction_widget.prediction_btns[1]:GetText(), "ConsolePP")
+                Tester.PressEnter()
+                AssertEq(screen.console_edit:GetString(), "ConsolePP")
+                AssertEq(#prediction_widget.prediction_btns, 0)
+            end
+            temp:Purge()
         end,
-    }
+        ["test table word prediction"] = function ()
+            G.global "_CPM_foo"
+            local temp = State()
+            temp:Set(G, "_CPM_foo", {
+                bar = { baz = { bat = { Bar = function() end } } }
+            })
+            do
+                local screen = Tester.OpenConsole()
+                Tester.SendTextInput("_CPM_foo.bar.baz.bat:")
+                local prediction_widget = screen.console_edit.prediction_widget
+                AssertEq(#prediction_widget.prediction_btns, 1)
+                AssertEq(prediction_widget.prediction_btns[1]:GetText(), "Bar")
+            end
+            temp:Purge()
+        end,
+    },
 }

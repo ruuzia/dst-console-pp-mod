@@ -59,4 +59,13 @@ end
 AddClientModRPCHandler(RPC_NAMESPACE, "UnrevealMap", unreveal)
 
 return {
+    tests = {
+        ["test c_revealmap() runs"] = function ()
+            if not G.TheWorld then
+                return Tester.CONDITIONS_NOT_MET
+            end
+            G.ExecuteConsoleCommand("c_revealmap()")
+            G.ExecuteConsoleCommand("c_revealmap(false)")
+        end,
+    }
 }

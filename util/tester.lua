@@ -117,10 +117,21 @@ end
 function Tester.SendTextInput(str)
     TheFrontEnd:OnTextInput(str)
 end
+
+function Tester.WithKeysDown(modifiers, fn, ...)
+    local temp = State()
+    temp:Set(TheInput, "IsKeyDown", function (self, key)
+        return table.contains(modifiers, key)
+    end)
+    fn(...)
+    temp:Purge()
+end
+
 function Tester.SendKey(key)
     TheFrontEnd:OnRawKey(key, true)
     TheFrontEnd:OnRawKey(key, false)
 end
+
 function Tester.PressEnter()
     TheFrontEnd:OnRawKey(KEY_ENTER, true)
     TheFrontEnd:OnControl(G.CONTROL_ACCEPT, true)
