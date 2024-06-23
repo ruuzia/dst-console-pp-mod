@@ -6,22 +6,22 @@ local G = GLOBAL
 local ConsoleScreen = require "screens/consolescreen"
 
 Hook(ConsoleScreen, "OnRawKeyHandler", function (orig, screen, key, down, ...)
-    if key == KEY_TAB and down and Config.TABINSERT then
+    local contents = screen.console_edit:GetString()
+    local cursor = screen.console_edit.inst.TextEditWidget:GetEditCursorPos()
+    local linestart = StrGetLineStart(contents, cursor)
+    local chars = contents:sub(linestart, cursor)
+    -- If only whitespace is between beginning of line and cursor
+    local is_whitespace = chars:find("^%s*$")
+
+    if key == KEY_TAB and down and Config.TABINSERT and is_whitespace then
         for _ = 1, Config.TABSPACES do
             screen.console_edit.inst.TextEditWidget:OnTextInput(' ')
         end
-    elseif key == KEY_BACKSPACE and down then
-        local contents = screen.console_edit:GetString()
-        local cursor = screen.console_edit.inst.TextEditWidget:GetEditCursorPos()
-
-        local linestart = StrGetLineStart(contents, cursor)
-        local chars = contents:sub(linestart, cursor)
-        if chars:find "^%s+$" then
-            for i = 1, math.min(#chars, Config.TABSPACES) do
-                screen.console_edit.inst.TextEditWidget:OnKeyDown(KEY_BACKSPACE)
-            end
-            return true
+    elseif key == KEY_BACKSPACE and down and is_whitespace then
+        for i = 1, math.min(#chars, Config.TABSPACES) do
+            screen.console_edit.inst.TextEditWidget:OnKeyDown(KEY_BACKSPACE)
         end
+        return true
    end
 
     return orig(screen, key, down, ...)
