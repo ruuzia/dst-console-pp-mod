@@ -91,6 +91,9 @@ function RunTestsForModule(name)
         end
     end
     Tester.CloseConsole()
+    if not module then
+        error("Error: could not find module "..tostring(name), 2)
+    end
     G.TheGlobalInstance:DoTaskInTime(0.1, _RunTestsForModule, module)
 end
 
