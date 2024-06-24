@@ -20,8 +20,8 @@ forumthread = ""
 api_version_dst = 10
 -- Other mods first for my incompatibility detection
 priority = -20
--- Client version should start before server
-if CLIENT_VERSION then priority = priority + 1 end
+-- Client version should start after server
+if CLIENT_VERSION then priority = priority - 1 end
 mod_dependencies = {}
 
 local function Header(data)
