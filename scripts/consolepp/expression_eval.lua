@@ -64,18 +64,25 @@ function G.ExecuteConsoleCommand(fnstr, guid, x, z)
         fnstr = fnstr:sub(2)
     end
 
-    -- First try evaluate as expression
-    local result = {pcall(G.loadstring("return "..fnstr))}
-    -- If failed
-    if not result[1] and not equalsstart then
-        result = {pcall(G.loadstring(fnstr))}
+    -- First try to parse as expression
+    local command, err = G.loadstring("return "..fnstr)
+    if not command and not equalsstart then
+        -- Try again as block
+        command, err = G.loadstring(fnstr)
     end
-    if result[1] then
-        for i = 2, #result do
-            PrettyPrint(result[i]);
+
+    if command then
+        local result = { pcall(command) }
+        -- If failed
+        if result[1] then
+            for i = 2, #result do
+                PrettyPrint(result[i]);
+            end
+        else
+            print(tostring(result[2]))
         end
     else
-        print("ERROR: "..tostring(result[2]))
+        print(tostring(err))
     end
     ------------------------
 
