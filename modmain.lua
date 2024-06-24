@@ -1,8 +1,8 @@
 local G = GLOBAL
 
 G.global "ConsolePP"
-if G.ConsolePP and G.ConsolePP.env.modinfo.all_clients_require_mod and modinfo.client_only_mod then
-    -- Server+all_clients version already exists
+if G.ConsolePP and G.ConsolePP.env.modinfo.client_only_mod and modinfo.all_clients_require_mod then
+    -- Client version already exists
     -- Don't run client-only mod
     -- TODO: support client-only configuration with active all clients mod
     return

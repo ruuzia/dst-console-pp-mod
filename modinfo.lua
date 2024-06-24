@@ -7,7 +7,7 @@ This mod implements many improvements to the DST command console.
 
 󰀔 Please view the Steam description for details 󰀔
 ]=]
-version = "1.4.11"
+version = "1.5.0"
 dst_compatible = true
 forge_compatible = false
 gorge_compatible = false
@@ -21,7 +21,7 @@ api_version_dst = 10
 -- Other mods first for my incompatibility detection
 priority = -20
 -- Client version should start before server
-if CLIENT_VERSION then priority = priority - 1 end
+if CLIENT_VERSION then priority = priority + 1 end
 mod_dependencies = {}
 
 local function Header(data)
