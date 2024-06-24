@@ -76,6 +76,11 @@ Hook(ConsoleScreen, "_ctor", function(constructor, screen, ...)
             -- a click for whatever happens to be beneath the mouse
             -- console_edit:OnProcess()
             return false
+        else
+            -- Inserting newline
+            -- Must make sure that the CONTROL_ACCEPT up trigger doesn't
+            -- try and now complete word predictions with the changed text
+            console_edit._CPM_inserting_newline = true
         end
         local ret = _OnTextInput(console_edit, text, ...)
         OnTextUpdate(screen)
@@ -90,12 +95,14 @@ Hook(ConsoleScreen, "_ctor", function(constructor, screen, ...)
 
     local _OnControl = screen.console_edit.OnControl
     screen.console_edit.OnControl = function (console_edit, control, down, ...)
-        -- Shift+Enter should prioritize new line over accepting completion
-        if control == G.CONTROL_ACCEPT
-            and down
-            and ShouldForceNewline(console_edit)
+        if control == G.CONTROL_ACCEPT and not down
+            and console_edit._CPM_inserting_newline
         then
-            return false
+            -- Don't want to complete any word predictions after inserting a newline
+            console_edit._CPM_inserting_newline = false
+            if ShouldAllowNewline(console_edit) then
+                return true
+            end
         end
 
         -- Now check if someone else needs to do something with the control
@@ -142,6 +149,20 @@ return {
                 -- Even though there is a word completion available, ignore it!
                 Tester.WithKeysDown({ KEY_SHIFT }, Tester.PressEnter)
                 AssertEq(screen.console_edit:GetString(), "ConsoleP\n")
+            end
+            temp:Purge()
+        end,
+        ["test new line in middle of word"] = function ()
+            local temp = State()
+            temp:Set(Config, "ENTERCOMPLETE", true)
+            do
+                local screen = Tester.OpenConsole()
+                Tester.SendTextInput("do abc_")
+                Tester.SendKey(KEY_LEFT)
+                Tester.SendKey(KEY_LEFT)
+                Tester.PressEnter()
+                AssertEq(screen.console_edit:GetString(), "do ab\nc_")
+                AssertEq(screen.console_edit.inst.TextEditWidget:GetEditCursorPos(), 6)
             end
             temp:Purge()
         end,
