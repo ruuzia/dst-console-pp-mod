@@ -173,3 +173,21 @@ function GetMetaField(t, k)
     local mt = getmetatable(t)
     return mt and mt[k]
 end
+
+CallableTable = function (fn)
+    local wrapper = { __call = function (_, ...) return fn(...) end }
+    Impurities:Set(wrapper, "__call", fn)
+    return setmetatable(wrapper, wrapper)
+end
+
+
+-- Alternate disableable and hook function that would work with other mods
+-- hooking add their own hook
+function Hook2(loc, idx, wrapper)
+    local orig = modassert(loc[idx], "no decorator function")
+    loc[idx] = CallableTable(orig)
+    -- Override call method in metatable
+    Impurities:Set(loc[idx], "__call", function(_, ...)
+        return wrapper(orig, ...)
+    end)
+end
