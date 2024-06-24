@@ -21,20 +21,6 @@ Hook(ConsoleScreen, "OnTextEntered", function (orig, screen, ...)
     end
 end)
 
--- Keep CTRL from toggling remote execute if you press enter
-Hook(ConsoleScreen, "OnRawKeyHandler", function (orig, screen, key, down, ...)
-    if key == KEY_ENTER and TheInput:IsKeyDown(KEY_CTRL) then
-        screen.ctrl_pasting = true
-    end
-    return orig(screen, key, down, ...)
-end)
-
--- Oh and we need to do this too
-Hook(ConsoleScreen, "_ctor", function (constructor, screen, ...)
-    constructor(screen, ...)
-	screen.console_edit.validrawkeys[KEY_ENTER] = true
-end)
-
 return {
     tests = {
         -- Test for bug where history idx was off

@@ -93,6 +93,10 @@ FEATURES = {
         desc = "Applying tab complete and enter complete configuration",
     },
     {
+        name = "remote_toggle_key",
+        desc = "Customize remote toggle key and keep shortcuts from triggering remote toggle",
+    },
+    {
         name = "quiet_server_pause_messages",
         desc = "Disables annoying Server Pause and Server Unpaused messages",
         add_config = "Quiet Server Pause Messages",
