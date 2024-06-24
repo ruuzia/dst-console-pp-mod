@@ -1,8 +1,8 @@
 -- This module adds behaviour similar to what can be found in the Lua
 -- REPL. If you prefix your input with an equal sign "=", it will be
 -- evaluated as an expression rather than a block. Additionally, 
--- it will first try to evaluate the command as an expression and then
--- evaluate as a block on a fail. Finally, the results of commands
+-- it will first try to parse the command as an expression and then
+-- as a block if it fails. Finally, the results of commands
 -- evaluated as an expression will be pretty printed nicely.
 --
 -- SUPPORT:
@@ -79,9 +79,11 @@ function G.ExecuteConsoleCommand(fnstr, guid, x, z)
                 PrettyPrint(result[i]);
             end
         else
+            -- Runtime error
             print(tostring(result[2]))
         end
     else
+        -- Parsing error
         print(tostring(err))
     end
     ------------------------
