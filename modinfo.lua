@@ -176,7 +176,7 @@ configuration_options = {
             { data = true, description = "Yes" },
             { data = false, description = "No" },
         },
-        default = true,
+        default = false,
     },
 
     Header {
