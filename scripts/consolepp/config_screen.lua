@@ -53,6 +53,7 @@ function ConsolePP.Config()
     Hook(screen, "Apply", function(orig, self, ...)
         local ret = { orig(self, ...) }
         ConfirmModuleChanges()
+        Config:Update()
         return unpack(ret)
     end)
 end
