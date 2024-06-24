@@ -59,7 +59,7 @@ end)
 local _ignore = false
 AddClientModRPCHandler(RPC_NAMESPACE, "Completions", function(completestr, exprstart, matches)
     -- Check console screen is still open
-    local scrn = Predictor.TheFrontEnd:GetActiveScreen()
+    local scrn = TheFrontEnd:GetActiveScreen()
     if scrn.name ~= "ConsoleScreen" then return end
     -- Check text still starts the same
     local text = scrn.console_edit:GetString()
