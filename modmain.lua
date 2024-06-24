@@ -47,24 +47,24 @@ local FEATURE_PATH = "consolepp/"
 
 local modules = {}
 
-local function LoadModules()
-    for _, feature in ipairs(modinfo.FEATURES) do
-        if Config:IsFeatureEnabled(feature.name) then
-            Log("Loading feature module %q", feature.name)
-            local ok, result = pcall(Require, FEATURE_PATH..feature.name)
-            if not ok then
-                Log("Failed to load module: %q", feature.name)
-                moderror(result)
-            else
-                result = result or {}
-                result.name = feature.name
-                table.insert(modules, result)
-            end
-        end
+function LoadModule(name)
+    Log("Loading feature module %q", name)
+    local ok, result = pcall(Require, FEATURE_PATH..name)
+    if not ok then
+        Log("Failed to load module: %q", name)
+        moderror(result)
+    else
+        result = result or {}
+        result.name = name
+        table.insert(modules, result)
     end
 end
 
-LoadModules()
+for _, feature in ipairs(modinfo.FEATURES) do
+    if Config:IsFeatureEnabled(feature.name) then
+        LoadModule(feature.name)
+    end
+end
 
 function IsFeatureLoaded(name)
     return G.package.loaded[FEATURE_PATH..name] ~= nil
