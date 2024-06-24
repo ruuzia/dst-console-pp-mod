@@ -17,6 +17,18 @@ local scissor_height = 400
 
 local scrolltop = 5
 
+local function LineColor(line, default)
+    if line:find("Error") or line:find("ERROR") then
+        return G.WEBCOLOURS.RED
+    elseif line:find("Warning") or line:find("WARNING") then
+        return G.WEBCOLOURS.YELLOW
+    elseif line:find("Success") or line:find("SUCCESS") then
+        return G.WEBCOLOURS.GREEN
+    else
+        return default
+    end
+end
+
 ---@class Widget
 ---@field AddChild fun(Widget): table
 ---@field _base table
@@ -37,7 +49,8 @@ ScrollableConsoleLog = Class(Widget, function(self, history)
 
     function self.create_widgets(parent)
         for i = 1, QUEUE_SIZE do
-            self.widgets[i] = parent:AddChild(Text(font, size, self.history[QUEUE_SIZE - i + 1]))
+            local line = self.history[QUEUE_SIZE - i + 1]
+            self.widgets[i] = parent:AddChild(Text(font, size, line, LineColor(line, self.text_colour)))
             self.widgets[i]:SetHAlign(G.ANCHOR_LEFT)
             local width = self.widgets[i]:GetRegionSize()
             self.widgets[i]:SetPosition(width * 0.5, (i - 1) * row_height)
@@ -51,12 +64,16 @@ ScrollableConsoleLog = Class(Widget, function(self, history)
 
     function self.update_fn(chatline, index, current_scroll_pos, row_offset)
         chatline:Show()
-        if self.text_colour then chatline:SetColour(self.text_colour) end
         local i = #self.history + current_scroll_pos - (index - 2)
-        chatline:SetString(self.history[i])
+        local line = self.history[i]
+        chatline:SetString(line)
+        if line then
+            chatline:SetColour(LineColor(line, self.text_colour) or {1,1,1,1})
+        end
         local x = chatline:GetRegionSize()
-        if not x then return end
-        chatline:SetPosition(x*0.5, chatline:GetPosition().y)
+        if x then
+            chatline:SetPosition(x*0.5, chatline:GetPosition().y)
+        end
     end
 
 
