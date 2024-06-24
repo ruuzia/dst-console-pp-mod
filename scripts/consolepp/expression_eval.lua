@@ -70,10 +70,12 @@ function G.ExecuteConsoleCommand(fnstr, guid, x, z)
     if not result[1] and not equalsstart then
         result = {pcall(G.loadstring(fnstr))}
     end
-    if #result > 1 then
+    if result[1] then
         for i = 2, #result do
             PrettyPrint(result[i]);
         end
+    else
+        print("ERROR: "..tostring(result[2]))
     end
     ------------------------
 
