@@ -17,7 +17,6 @@ local CTRL_KEYS = {
 
 -- Keep CTRL from toggling remote execute if you press enter
 Hook(ConsoleScreen, "OnRawKeyHandler", function (orig, screen, key, down, ...)
-    Log("OnRawKeyHandler %d %s", key, tostring(down))
     local mod_down = TheInput:IsKeyDown(KEY_LCTRL) or TheInput:IsKeyDown(KEY_RCTRL)
                   or TheInput:IsKeyDown(KEY_LALT) or TheInput:IsKeyDown(KEY_RALT)
     if mod_down and CTRL_KEYS[key] then
