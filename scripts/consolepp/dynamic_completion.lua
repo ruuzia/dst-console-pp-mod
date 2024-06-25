@@ -6,9 +6,6 @@ local G = GLOBAL
 local WordPredictor = require "util/wordpredictor"
 local ConsoleScreen = require "screens/consolescreen"
 
-local Predictor = Require 'consolepp.dynamic_completion.prediction'
-local Lua = Require 'consolepp.dynamic_completion.lua'
-
 local SimpleGetDisplayString = function(word) return word end
 local function ForceWordPrediction(wp, str, exprstart, matches)
     local dic = {
@@ -36,16 +33,16 @@ local function FindWordEnd(text, cursorpos)
 end
 
 AddModRPCHandler(RPC_NAMESPACE, "RequestCompletions", function(player, str)
-    local indices, exprstart = Predictor.FindTable(str)
+    local indices, exprstart = Prediction.FindTable(str)
     if not indices then return end
-    local matches = Predictor.GetPossibleKeys(indices, player)
+    local matches = Prediction.GetPossibleKeys(indices, player)
     if not matches then return end
     SendModRPCToClient(GetClientModRPC(RPC_NAMESPACE, "Completions"), player.userid, str, exprstart, table.concat(matches, '\n'))
 end)
 
 AddModRPCHandler(RPC_NAMESPACE, "RequestGlobalCompletions", function(player, str)
     local search_string = str:match("[%w_]+$")
-    local matches = Predictor.GetPossibleKeys({ [0] = { identifier = search_string }, { identifier = "_G" } }, player)
+    local matches = Prediction.GetPossibleKeys({ [0] = { identifier = search_string }, { identifier = "_G" } }, player)
     if matches then
         SendModRPCToClient(GetClientModRPC(RPC_NAMESPACE, "Completions"),
                            player.userid,
@@ -110,9 +107,9 @@ local function TryComplete(wp, text, cursor_pos, remote_execute)
     if indexer == '.' or indexer == ':' then
         -- Chain index completion (e.g: tree.apple.components.juiceable:Squeez)
         if running_in_client and Config.COMPLETINGFIELDS then
-            local indices, exprstart = Predictor.FindTable(str)
+            local indices, exprstart = Prediction.FindTable(str)
             if indices then
-                local matches = Predictor.GetPossibleKeys(indices, G.ThePlayer)
+                local matches = Prediction.GetPossibleKeys(indices, G.ThePlayer)
                 if not matches then
                     wp:Clear()
                     return true
@@ -138,7 +135,7 @@ local function TryComplete(wp, text, cursor_pos, remote_execute)
 
         if running_in_client then
             if Config.AUTOCOMPLETING then
-                local matches = Predictor.GetPossibleKeys({ [0] = { identifier = search_string }, { identifier = "_G" } }, G.ThePlayer)
+                local matches = Prediction.GetPossibleKeys({ [0] = { identifier = search_string }, { identifier = "_G" } }, G.ThePlayer)
                 if not matches then
                     wp:Clear()
                     return true

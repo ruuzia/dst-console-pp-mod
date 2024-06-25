@@ -31,6 +31,8 @@ modimport "util/logs"
 modimport "util/textedit"
 modimport "util/consolelog"
 modimport "util/tester"
+modimport "util/lua"
+modimport "util/prediction"
 
 ------------------------------------------
 ------------------------------------------

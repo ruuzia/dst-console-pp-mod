@@ -1,6 +1,7 @@
 setfenv(1, ConsolePP.env)
 local G = GLOBAL
-local _M = {}
+
+Prediction = {}
 
 -- TODO: proper Lua lexer
 -- for now we have this gobbledygook
@@ -46,7 +47,7 @@ local function ValidateIdentifer(word)
     return word:find("^[%w_][%a_]*$") ~= nil
 end
 
-function _M.FindTable(str)
+function Prediction.FindTable(str)
     local search_start = str:find("[%w_]*$")
     local indices = {}
     -- Zero index is the one we're completing
@@ -74,7 +75,7 @@ function _M.FindTable(str)
     return indices, expressionstart
 end
 
-function _M.GetPossibleKeys(indices, theplayer)
+function Prediction.GetPossibleKeys(indices, theplayer)
     -- Temp inject "ThePlayer" into console
     local saved_ThePlayer = G.ThePlayer
     G.ThePlayer = theplayer
@@ -147,5 +148,3 @@ function _M.GetPossibleKeys(indices, theplayer)
 
     return matches
 end
-
-return _M

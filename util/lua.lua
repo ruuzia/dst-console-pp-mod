@@ -4,7 +4,7 @@
 setfenv(1, ConsolePP.env)
 local G = GLOBAL
 
-local _M = {}
+Lua = {}
 
 local function consume_string_literal(str, i, delim)
     assert(str:sub(i, i) == delim)
@@ -42,7 +42,7 @@ local function consume_comment(str, i)
     end
 end
 
-function _M.IsUnfinishedStringOrComment(str)
+function Lua.IsUnfinishedStringOrComment(str)
     local i = 1
     while i <= #str do
         local c = str:sub(i, i)
@@ -62,5 +62,3 @@ function _M.IsUnfinishedStringOrComment(str)
     end
     return false
 end
-
-return _M
