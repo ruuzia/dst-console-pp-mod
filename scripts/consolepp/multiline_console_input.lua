@@ -76,11 +76,19 @@ Hook(ConsoleScreen, "_ctor", function(constructor, screen, ...)
             -- a click for whatever happens to be beneath the mouse
             -- console_edit:OnProcess()
             return false
-        else
+        elseif text == "\n" then
             -- Inserting newline
             -- Must make sure that the CONTROL_ACCEPT up trigger doesn't
             -- try and now complete word predictions with the changed text
             console_edit._CPM_inserting_newline = true
+
+            -- The text engine seems to have a weird bug with inserting a newline
+            -- when the current line is empty. This has bothered me enough I'm 
+            -- going to have it put it in a space to make it work in these cases.
+            local pos = console_edit.inst.TextEditWidget:GetEditCursorPos()
+            if pos == 0 then
+                console_edit.inst.TextEditWidget:OnTextInput(' ')
+            end
         end
         local ret = _OnTextInput(console_edit, text, ...)
         OnTextUpdate(screen)
