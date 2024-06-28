@@ -6,6 +6,8 @@ local G = GLOBAL
 local WordPredictor = require "util/wordpredictor"
 local ConsoleScreen = require "screens/consolescreen"
 
+local GLOBAL_MIN_CHARS = 2
+
 local SimpleGetDisplayString = function(word) return word end
 local function ForceWordPrediction(wp, str, exprstart, matches)
     local dic = {
@@ -130,7 +132,9 @@ local function TryComplete(wp, text, cursor_pos, remote_execute)
         -- Global completions
         local search_string = str:sub(search_start)
 
-        if tonumber(search_string:sub(1, 1)) or ignored_searches[search_string] then
+        if tonumber(search_string:sub(1, 1))
+            or ignored_searches[search_string]
+            or #search_string < GLOBAL_MIN_CHARS then
             wp:Clear()
             return true
         end
