@@ -104,6 +104,10 @@ local function TryComplete(wp, text, cursor_pos, remote_execute)
     local running_in_client = modinfo.client_only_mod or IS_DEDICATED or not remote_execute
     local indexer = str:sub(search_start-1, search_start-1)
 
+    if Lua.IsUnfinishedStringOrComment(str) then
+        return false
+    end
+
     if indexer == '.' or indexer == ':' then
         -- Chain index completion (e.g: tree.apple.components.juiceable:Squeez)
         if running_in_client and Config.COMPLETINGFIELDS then
@@ -129,8 +133,6 @@ local function TryComplete(wp, text, cursor_pos, remote_execute)
         if tonumber(search_string:sub(1, 1)) or ignored_searches[search_string] then
             wp:Clear()
             return true
-        elseif Lua.IsUnfinishedStringOrComment(str) then
-            return false
         end
 
         if running_in_client then
@@ -162,7 +164,7 @@ Hook(WordPredictor, "RefreshPredictions", function (orig, self, text, cursor_pos
     local screen = TheFrontEnd:GetActiveScreen()
     if screen and screen.name == "ConsoleScreen" then
         local dynamic_completions = TryComplete(self, text, cursor_pos, screen.toggle_remote_execute)
-        if dynamic_completions ~= nil then
+        if dynamic_completions then
             return dynamic_completions
         end
     end
@@ -210,6 +212,14 @@ return {
                 AssertEq(prediction_widget.prediction_btns[1]:GetText(), "Bar")
             end
             temp:Purge()
+        end,
+
+        ["test prefab name completion still works"] = function ()
+            local screen = Tester.OpenConsole()
+            Tester.SendTextInput("c_spawn(\"beef_b")
+            local prediction_widget = screen.console_edit.prediction_widget
+            Assert(#prediction_widget.prediction_btns > 0, "should have prefab name predictions")
+            AssertEq(prediction_widget.prediction_btns[1]:GetText(), "\"beef_bell\"")
         end,
     },
 }

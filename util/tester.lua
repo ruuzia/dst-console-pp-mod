@@ -42,6 +42,20 @@ local function Run(fn)
     return result or Tester.SUCCESS
 end
 
+local function _RunSingleTest(_, name, fn)
+    Log("Running test %q", name)
+    local result = Run(fn)
+    if result == Tester.SUCCESS then
+        Log("Test succeeded: "..name)
+    elseif result == Tester.FAIL then
+        Log("Test failed: "..name)
+    elseif result == Tester.CONDITIONS_NOT_MET then
+        Log("Could not run test: conditions not met")
+    else
+        Log("ERROR: unknown result type %q", result)
+    end
+end
+
 local function _RunTestsForModule(_, module)
     Log("Running tests for module %q", module.name)
     for test_name, fn in pairs(module.tests or {}) do
@@ -101,6 +115,17 @@ function RunTests()
     -- Add delay
     Tester.CloseConsole()
     G.TheGlobalInstance:DoTaskInTime(0.1, _RunTests)
+end
+
+function RunSingleTest(name)
+    for _, module in ipairs(GetFeatureModules()) do
+        for test_name, fn in pairs(module.tests or {}) do
+            if test_name == name then
+                return G.TheGlobalInstance:DoTaskInTime(0.1, _RunSingleTest, name, fn)
+            end
+        end
+    end
+    error("Error: could not find module "..tostring(name), 2)
 end
 
 function Tester.OpenConsole()

@@ -26,10 +26,10 @@ end)
 return {
     tests = {
         ["test saving last remote"] = function ()
-            Impurities:Set(Config, "KEEPCONSOLEOPEN", false)
+            local temp = State()
+            temp:Set(Config, "KEEPCONSOLEOPEN", false)
             if not TheNet:GetIsClient() then
-                Log("Must be client in server to run this test")
-                return
+                return Tester.CONDITIONS_NOT_MET
             end
             local screen = Tester.OpenConsole()
             screen:ToggleRemoteExecute(false)
@@ -37,7 +37,7 @@ return {
             Tester.PressEnter()
             screen = Tester.OpenConsole()
             AssertEq(screen.toggle_remote_execute, false)
-            Impurities:Restore(Config, "KEEPCONSOLEOPEN")
+            temp:Purge()
         end,
     }
 }
