@@ -106,6 +106,10 @@ FEATURES = {
         desc = "Use ConsolePP.Config() to open mod settings from anywhere without reloading",
     },
     {
+        name = "support_completing_in_middle",
+        desc = "Game's built-in word prediction always tries to complete from end of input rather than at cursor.",
+    },
+    {
         name = "hot_reload",
         desc = "[dev] use ConsolePP.HotReload() to hot reload entire mod",
         default = false,

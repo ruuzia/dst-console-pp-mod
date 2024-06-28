@@ -18,6 +18,27 @@ function Require(modname)
     return require(modname)
 end
 
+local nextUpvalue = function (fn, i)
+    i = i + 1
+    local name, value = debug.getupvalue(fn, i)
+    if name then
+        return i, name, value
+    end
+end
+function Upvalues(fn)
+    return nextUpvalue, fn, 0
+end
+
+function RecursiveUpvalueHijack(fn, upvalue_name, new_value)
+    for i, name, value in Upvalues(fn) do
+        if name == upvalue_name then
+            debug.setupvalue(fn, i, new_value)
+        elseif type(value) == "function" then
+            RecursiveUpvalueHijack(value, upvalue_name, new_value)
+        end
+    end
+end
+
 local nlchar = ('\n'):byte()
 
 function printf(fmt, ...)
