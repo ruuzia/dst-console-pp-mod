@@ -24,7 +24,7 @@ G.ConsolePP = ConsolePP
 RPC_NAMESPACE = "ConsolePP"
 
 modimport "util/state"
-modimport "util/util"
+modimport "util/modding"
 modimport "util/config"
 modimport "util/history"
 modimport "util/logs"
