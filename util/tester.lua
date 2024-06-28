@@ -125,7 +125,7 @@ function RunSingleTest(name)
             end
         end
     end
-    error("Error: could not find module "..tostring(name), 2)
+    G.error("Error: could not find test "..tostring(name), 2)
 end
 
 function Tester.OpenConsole()
@@ -148,10 +148,12 @@ end
 
 function Tester.WithKeysDown(modifiers, fn, ...)
     local temp = State()
+    for _, mod in ipairs(modifiers) do TheFrontEnd:OnRawKey(mod, true) end
     temp:Set(TheInput, "IsKeyDown", function (self, key)
         return table.contains(modifiers, key)
     end)
     fn(...)
+    for _, mod in ipairs(modifiers) do TheFrontEnd:OnRawKey(mod, false) end
     temp:Purge()
 end
 
