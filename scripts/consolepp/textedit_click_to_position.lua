@@ -23,7 +23,7 @@ local function onclicked(self, mouse_x, mouse_y)
     local str = self:GetString()
     --local _, rowstart = str:find("^"..("%f[\1-\9\14-\255][\1-\9\14-\255]*."):rep(row))
     local row = 1
-    local rowstart = 0
+    local rowstart = 1
     if target_row > row then
         for nl in str:gmatch("\n()") do
             row = row + 1
@@ -34,9 +34,9 @@ local function onclicked(self, mouse_x, mouse_y)
         end
     end
 
-    local line = str:sub(rowstart+1, StrGetLineEnd(str, rowstart+1))
+    local line = str:sub(rowstart, StrGetLineEnd(str, rowstart))
     local col = TextBoxXPosToCol(self.font, self.size, mouse_x - x_text_start, line, string.sub)
-    self.inst.TextEditWidget:SetEditCursorPos(rowstart + col)
+    self.inst.TextEditWidget:SetEditCursorPos(rowstart + col - 1)
     ForceFocusTextEditCursor(self)
 
     --test world selection screen textedits and in-game chat input
@@ -57,7 +57,6 @@ Hook(TextEdit, "OnMouseButton", function (orig, self, button, down, mouse_x, mou
 end)
 
 Hook(TextEdit, "OnControl", function (orig, self, control, down)
-    -- print("OnControl", control, down)
     if control == G.CONTROL_ACCEPT
         and TheInput:GetHUDEntityUnderMouse() == self.inst
         and down
@@ -77,6 +76,24 @@ Hook(TextEdit, "OnControl", function (orig, self, control, down)
     return orig(self, control, down)
 end)
 
+-- For console, keep clicking just outside active text edit from closing
+-- screen.
+Hook(require "screens/consolescreen", "_ctor", function (constructor, self, ...)
+    constructor(self, ...)
+
+    Hook(self.console_edit, "OnStopForceEdit", function (orig, console_edit, ...)
+        if not self.edit_bg.focus then
+            return orig(self, ...)
+        end
+    end)
+end)
+Hook(require "screens/consolescreen", "OnControl", function (orig, self, control, down, ...)
+    if control == G.CONTROL_ACCEPT and not down then
+        self.console_edit:SetEditing(true)
+        return false
+    end
+    return orig(self, control, down, ...)
+end)
 
 return {
     tests = {
