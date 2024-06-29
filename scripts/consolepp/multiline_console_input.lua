@@ -16,8 +16,8 @@ local fontsize = 30
 local edit_width = 850
 local edit_bg_padding = -10
 local baseypos = 60
-local BACKGROUND_COLOUR = { 142/255, 123/255, 90/255, 0.75 }
-local DECORATION_COLOUR = { 0.1, 0.1, 0.1, 0.8 }
+local BACKGROUND_COLOUR = { 142/255, 123/255, 90/255, 0.85 }
+local DECORATION_COLOUR = { 0.1, 0.1, 0.1, 0.9 }
 
 --- Scales the height of the console edit to allow for
 --- multiline input.
