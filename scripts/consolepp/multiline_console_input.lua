@@ -8,6 +8,7 @@ local G = GLOBAL
 
 local ConsoleScreen = require "screens/consolescreen"
 local NineSlice = require "widgets/nineslice"
+local Widget = require "widgets/widget"
 
 -- UI values
 local label_height = 50
@@ -23,7 +24,7 @@ local DECORATION_COLOUR = { 0.1, 0.1, 0.1, 0.8 }
 local function UpdateConsoleSize(screen)
     local _, nlcount = screen.console_edit:GetString():gsub('\n', '')
     screen.label_height = label_height + fontsize * nlcount
-	screen.root:SetPosition(screen.root:GetPosition().x, baseypos + fontsize * nlcount / 2, 0)
+	screen._CPM_textbox:SetPosition(0, fontsize * nlcount / 2, 0)
     local wcurr, hcurr = screen.edit_bg:GetSize()
     if wcurr and hcurr and hcurr ~= screen.label_height then
         screen.edit_bg:SetSize( screen.edit_width + edit_bg_padding, screen.label_height )
@@ -51,12 +52,14 @@ end
 
 local function BuildFancyConsoleInput(screen)
 	screen.root:SetPosition(0, baseypos, 0)
+    local textbox = screen.root:AddChild(Widget(""))
+
+    screen._CPM_textbox = textbox
     screen.label_height = label_height
     screen.edit_width = edit_width
 
     if screen.edit_bg then screen.edit_bg:Kill() end
-
-    screen.edit_bg = screen.root:AddChild(NineSlice("images/dialogrect_9slice.xml"))
+    screen.edit_bg = textbox:AddChild(NineSlice("images/dialogrect_9slice.xml"))
     screen.edit_bg:SetSize(edit_bg_padding + screen.edit_width, label_height)
     screen.edit_bg:SetScale(0.4, 0.4)
 	screen.edit_bg:SetPosition( 0, 10 )
@@ -67,6 +70,9 @@ local function BuildFancyConsoleInput(screen)
     screen.edit_bg.elements[5]:SetTint(unpack(BACKGROUND_COLOUR))
 
 	screen.console_remote_execute:SetPosition( -screen.edit_width*0.5 -200*0.5 - 35, 0 )
+
+    screen.root:RemoveChild(screen.console_edit)
+    textbox:AddChild(screen.console_edit)
     screen.console_edit:SetRegionSize(screen.edit_width, screen.label_height)
     screen.console_edit:SetVAlign(G.ANCHOR_TOP)
     screen.console_edit:MoveToFront()
