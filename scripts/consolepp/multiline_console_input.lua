@@ -7,29 +7,32 @@ setfenv(1, ConsolePP.env)
 local G = GLOBAL
 
 local ConsoleScreen = require "screens/consolescreen"
+local NineSlice = require "widgets/nineslice"
 
 -- UI values
 local label_height = 50
 local fontsize = 30
 local edit_width = 850
-local edit_bg_padding = 50
-local baseypos = 75
+local edit_bg_padding = -10
+local baseypos = 60
+local BACKGROUND_COLOUR = { 142/255, 123/255, 90/255, 0.9 }
+-- local BACKGROUND_COLOUR = { 0.2, 0.2, 0.2, 0.90 }
+local DECORATION_COLOUR = { 0.1, 0.1, 0.1, 0.95 }
 
 --- Scales the height of the console edit to allow for
 --- multiline input.
 local function UpdateConsoleSize(screen)
     local _, nlcount = screen.console_edit:GetString():gsub('\n', '')
     screen.label_height = label_height + fontsize * nlcount
-	screen.root:SetPosition(screen.root:GetPosition().x, baseypos + (fontsize - 2) * nlcount / 2, 0)
+	screen.root:SetPosition(screen.root:GetPosition().x, baseypos + fontsize * nlcount / 2, 0)
     local wcurr, hcurr = screen.edit_bg:GetSize()
     if wcurr and hcurr and hcurr ~= screen.label_height then
-        screen.edit_bg:ScaleToSize( screen.edit_width + edit_bg_padding, screen.label_height )
+        screen.edit_bg:SetSize( screen.edit_width + edit_bg_padding, screen.label_height )
         screen.console_edit:SetRegionSize( screen.edit_width, screen.label_height )
     end
 end
 
--- Ideally, this is called whenever the console text
--- changes.
+-- Ideally, this is called whenever the console text changes
 local function OnTextUpdate(screen)
     UpdateConsoleSize(screen)
 end
@@ -48,15 +51,26 @@ local function ShouldForceNewline(console_edit)
 end
 
 local function BuildFancyConsoleInput(screen)
-    screen.edit_bg:SetTexture("images/textbox_long_thinborder.xml", "textbox_long_thinborder.tex" )
 	screen.root:SetPosition(0, baseypos, 0)
     screen.label_height = label_height
     screen.edit_width = edit_width
-	screen.edit_bg:ScaleToSize(edit_bg_padding + screen.edit_width, label_height )
+
+    if screen.edit_bg then screen.edit_bg:Kill() end
+
+    screen.edit_bg = screen.root:AddChild(NineSlice("images/dialogrect_9slice.xml"))
+    screen.edit_bg:SetSize(edit_bg_padding + screen.edit_width, label_height)
+    screen.edit_bg:SetScale(0.4, 0.4)
 	screen.edit_bg:SetPosition( 0, 10 )
+
+    screen.edit_bg:SetTint(unpack(DECORATION_COLOUR))
+    screen.edit_bg.mid_center:SetTint(unpack(BACKGROUND_COLOUR))
+    screen.edit_bg.elements[4]:SetTint(unpack(BACKGROUND_COLOUR))
+    screen.edit_bg.elements[5]:SetTint(unpack(BACKGROUND_COLOUR))
+
 	screen.console_remote_execute:SetPosition( -screen.edit_width*0.5 -200*0.5 - 35, 0 )
     screen.console_edit:SetRegionSize(screen.edit_width, screen.label_height)
     screen.console_edit:SetVAlign(G.ANCHOR_TOP)
+    screen.console_edit:MoveToFront()
 end
 
 -- Screen init post-hook
@@ -127,13 +141,17 @@ Hook(ConsoleScreen, "_ctor", function(constructor, screen, ...)
         end
     end
 
-    -- Keep prediction_widget from claiming that Shift+Enter!
     Hook(screen.console_edit, "OnRawKey", function (orig, console_edit, key, down, ...)
+        -- Keep prediction_widget from claiming that Shift+Enter!
         if key == KEY_ENTER and down and ShouldForceNewline(console_edit) then
             console_edit:OnTextInput("\n")
             return true
         end
-        return orig(console_edit, key, down, ...)
+
+        local ret = orig(console_edit, key, down, ...)
+        -- Make backspace on line update immediately
+        UpdateConsoleSize(screen)
+        return ret
     end)
 end)
 
