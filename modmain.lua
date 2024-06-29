@@ -38,8 +38,6 @@ modimport "util/prediction"
 ------------------------------------------
 
 Assets = {
-    Asset("IMAGE", "images/textbox_long_thinborder.tex"),
-    Asset("ATLAS", "images/textbox_long_thinborder.xml"),
 }
 
 ------------------------------------------------------------
