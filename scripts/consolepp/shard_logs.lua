@@ -122,15 +122,15 @@ Hook(ConsoleScreen, "_ctor", function (constructor, screen, ...)
     end
 
     -- Keep from closing console screen when buttons have focus
-    screen.console_edit.OnStopForceEdit = function ()
+    Hook(screen.console_edit, "OnStopForceEdit", function (orig, console_edit, ...)
         for _, button in ipairs(screen._cpm_shard_buttons or {}) do
             if button.focus then
                 --screen.console_edit:SetEditing(true)
                 return
             end
         end
-        screen:Close()
-    end
+        return orig(console_edit, ...)
+    end)
 
 end)
 
