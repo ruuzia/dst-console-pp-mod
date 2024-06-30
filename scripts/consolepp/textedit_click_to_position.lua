@@ -88,7 +88,7 @@ Hook(require "screens/consolescreen", "_ctor", function (constructor, self, ...)
     end)
 end)
 Hook(require "screens/consolescreen", "OnControl", function (orig, self, control, down, ...)
-    if control == G.CONTROL_ACCEPT and not down then
+    if control == G.CONTROL_ACCEPT and not down and (self.edit_bg.focus or self.console_edit.focus) then
         self.console_edit:SetEditing(true)
         return false
     end
