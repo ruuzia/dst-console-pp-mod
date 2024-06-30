@@ -76,8 +76,9 @@ Hook(TextEdit, "OnControl", function (orig, self, control, down)
     return orig(self, control, down)
 end)
 
--- For console, keep clicking just outside active text edit from closing
--- screen.
+-- Console: make sure clicking on text edit never triggers run or cancel.
+-- Harder than it should be.
+
 Hook(require "screens/consolescreen", "_ctor", function (constructor, self, ...)
     constructor(self, ...)
 
@@ -88,9 +89,9 @@ Hook(require "screens/consolescreen", "_ctor", function (constructor, self, ...)
     end)
 end)
 Hook(require "screens/consolescreen", "OnControl", function (orig, self, control, down, ...)
-    if control == G.CONTROL_ACCEPT and not down and (self.edit_bg.focus or self.console_edit.focus) then
+    if control == G.CONTROL_ACCEPT and not down and (self.edit_bg.focus or TheInput:GetHUDEntityUnderMouse() == self.console_edit.inst) then
         self.console_edit:SetEditing(true)
-        return false
+        return true
     end
     return orig(self, control, down, ...)
 end)
