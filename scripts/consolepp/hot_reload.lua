@@ -22,6 +22,7 @@ local function _HotReload(silent)
     local verboseprint = print
     verboseprint "============ RELOAD ==============="
 
+    RemoveModRPCNamespace(RPC_NAMESPACE)
     Impurities:Purge()
     ModManager:FrontendUnloadMod(modname)
 
@@ -83,7 +84,6 @@ function ConsolePP.HotReload(silent)
     if IS_DEDICATED then
         SendModRPCToClient(GetClientModRPC(RPC_NAMESPACE, "hotreload"), nil)
     end
-    RemoveModRPCNamespace(RPC_NAMESPACE)
 
     local task
     task = TheGlobalInstance:DoStaticPeriodicTask(0, coroutine.wrap(function ()
