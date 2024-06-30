@@ -12,13 +12,7 @@ local function RemoveModRPCNamespace(namespace)
     -- todo: undo RPC_QUEUE_RATE_LIMIT increase
 end
 
-function ConsolePP.HotReload(silent)
-    -- Update client
-    if IS_DEDICATED then
-        SendModRPCToClient(GetClientModRPC(RPC_NAMESPACE, "hotreload"), nil)
-    end
-    RemoveModRPCNamespace(RPC_NAMESPACE)
-
+local function _HotReload(silent)
     local forceprint = print
     if silent then
         -- Temporarily silence print for other functions too
@@ -27,12 +21,7 @@ function ConsolePP.HotReload(silent)
     end
     local verboseprint = print
     verboseprint "============ RELOAD ==============="
-    -- temporarily lose console if open
-    local console_open = false
-    if not IS_DEDICATED and TheFrontEnd:GetActiveScreen().name == "ConsoleScreen" then
-        console_open = true
-        TheFrontEnd:GetActiveScreen():Close()
-    end
+
     Impurities:Purge()
     ModManager:FrontendUnloadMod(modname)
 
@@ -52,29 +41,7 @@ function ConsolePP.HotReload(silent)
     newenv.TheSim = TheSim
     newenv.Point = Point
     newenv.TheGlobalInstance = TheGlobalInstance
-	if ModManager:InitializeModMain(modname, newenv, "modmain.lua", true) then
-        verboseprint "Successfully Initialized ModMain"
-        -- Change ModManager's reference
-        for i,v in ipairs(G.ModManager.mods) do
-            if v == env then
-                ModManager.mods[i] = newenv
-                break
-            end
-        end
-
-        -- Reload mod prefabs
-        local prefab_name = "MOD_"..modname
-        G.Prefabs[prefab_name].assets = newenv.Assets or {}
-        TheSim:UnloadPrefabs{prefab_name}
-        TheSim:UnregisterPrefabs{prefab_name}
-        G.RegisterSinglePrefab(G.Prefabs[prefab_name])
-        TheSim:LoadPrefabs{prefab_name}
-
-        if console_open then
-            verboseprint "Re-opening ConsoleScreen"
-            TheFrontEnd:PushScreen(ConsoleScreen())
-        end
-    else
+	if not ModManager:InitializeModMain(modname, newenv, "modmain.lua", true) then
         if silent then
             forceprint("["..modinfo.name.."] Failed reload!\n"
                  ..KnownModIndex.failedmods[#KnownModIndex.failedmods].error)
@@ -82,6 +49,23 @@ function ConsolePP.HotReload(silent)
         verboseprint("=================================")
         return
     end
+
+    verboseprint "Successfully Initialized ModMain"
+    -- Change ModManager's reference
+    for i,v in ipairs(G.ModManager.mods) do
+        if v == env then
+            ModManager.mods[i] = newenv
+            break
+        end
+    end
+
+    -- Reload mod prefabs
+    local prefab_name = "MOD_"..modname
+    G.Prefabs[prefab_name].assets = newenv.Assets or {}
+    TheSim:UnloadPrefabs{prefab_name}
+    TheSim:UnregisterPrefabs{prefab_name}
+    G.RegisterSinglePrefab(G.Prefabs[prefab_name])
+    TheSim:LoadPrefabs{prefab_name}
 
     -- Call AddGamePostInits again
     for _, fn in ipairs(newenv.postinitfns.GamePostInit) do
@@ -92,6 +76,36 @@ function ConsolePP.HotReload(silent)
         env.print = forceprint
         G.print = forceprint
     end
+end
+
+function ConsolePP.HotReload(silent)
+    -- Update client
+    if IS_DEDICATED then
+        SendModRPCToClient(GetClientModRPC(RPC_NAMESPACE, "hotreload"), nil)
+    end
+    RemoveModRPCNamespace(RPC_NAMESPACE)
+
+    local task
+    task = TheGlobalInstance:DoStaticPeriodicTask(0, coroutine.wrap(function ()
+        -- temporarily lose console if open
+        local console_open = false
+        if not IS_DEDICATED and TheFrontEnd:GetActiveScreen().name == "ConsoleScreen" then
+            console_open = true
+            TheFrontEnd:GetActiveScreen():Close()
+        end
+        coroutine.yield()
+
+        _HotReload(silent)
+
+        if console_open then
+            coroutine.yield()
+            print "Re-opening ConsoleScreen"
+            TheFrontEnd:PushScreen(ConsoleScreen())
+        end
+
+        task:Cancel()
+        task = nil
+    end))
 end
 
 AddClientModRPCHandler(RPC_NAMESPACE, "hotreload", function()
