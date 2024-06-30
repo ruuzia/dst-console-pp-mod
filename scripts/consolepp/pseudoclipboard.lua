@@ -17,11 +17,14 @@ local INFO_TEXT = [[
 --------------------------------------
 ----- Console++ Pseudo-Clipboard -----
 --------------------------------------
--- This file is to make it easier to switch between editing a command within
--- the game and editing it in a real text editor. From the console, use Ctrl+C
--- to replace the file's content with the current console input. To send the
--- file content back to the console, use Ctrl+Shift+C.
--- Lines commented out with "--" will be left.
+-- * This file is to make it easier to switch between editing a command within
+--   the game and editing it in a real text editor.
+-- * From the console, use Ctrl+C to replace the file's content with the current
+--   console input.
+-- * To send the file content back to the console, use Ctrl+Shift+C.
+-- * Lines commented out with "--" will be left.
+-- * To completely disable, disable the pseudoclipboard module under advanced in
+--   the mod configuration screen and then delete this file.
 ]]
 
 -- Remove old files --
