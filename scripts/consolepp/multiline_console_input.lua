@@ -30,6 +30,12 @@ local function UpdateConsoleSize(screen)
     if wcurr and hcurr and hcurr ~= screen.label_height then
         screen.edit_bg:SetSize( screen.edit_width + edit_bg_padding, screen.label_height )
         screen.console_edit:SetRegionSize( screen.edit_width, screen.label_height )
+
+        local sx, sy = screen.console_edit:GetRegionSize()
+        if screen.console_edit.prediction_widget then
+            screen.console_edit.prediction_widget:SetPosition(-sx*0.5, sy*0.5)
+        end
+
     end
 end
 
