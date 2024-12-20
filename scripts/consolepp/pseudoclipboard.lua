@@ -33,7 +33,7 @@ AddGamePostInit(function() TheSim:ErasePersistentString("../pseudoclipboard.txt"
 ------------------------------
 
 local DIRECTORY_PATH = "../mods/"
-local DATA_FILE_PATH = DIRECTORY_PATH.."console_clipbaord.lua"
+local DATA_FILE_PATH = DIRECTORY_PATH.."console_clipboard.lua"
 
 -- Make game allow me to open this directory
 do
