@@ -24,6 +24,8 @@ local function LineColor(line, default)
         return G.WEBCOLOURS.YELLOW
     elseif line:find("Success") or line:find("SUCCESS") then
         return G.WEBCOLOURS.GREEN
+    elseif line:find("Note") or line:find("NOTE") then
+        return G.UICOLOURS.GOLD
     else
         return default
     end
