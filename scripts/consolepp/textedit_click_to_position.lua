@@ -100,11 +100,12 @@ return {
     tests = {
         ["click to position console edit"] = function ()
             local text = "Hello, World!"
-            local x, y = 360, 130
+            local x, y = 277, 67
 
             local console = Tester.OpenConsole()
             Tester.SendTextInput(text)
-            onclicked(console.console_edit, x, y)
+            local scale = console.console_edit:GetScale()
+            onclicked(console.console_edit, x * scale.x, y * scale.y)
 
             Assert(Tester.IsConsoleOpen(), "Clicking on console edit shouldn't close it!")
             Assert(console.console_edit:GetString(), text)
