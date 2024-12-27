@@ -47,6 +47,7 @@ end
 local function ShouldAllowNewline(console_edit)
     -- Create newline on Shift+Enter
     -- or in unfinished block
+    if TheInput:IsKeyDown(G.KEY_CTRL) then return false end
     return TheInput:IsKeyDown(G.KEY_SHIFT)
         or Lua.CodeMissingClosingStatement(console_edit:GetString())
         or console_edit.pasting
