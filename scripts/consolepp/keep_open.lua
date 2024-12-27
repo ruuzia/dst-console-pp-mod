@@ -3,12 +3,28 @@ local G = GLOBAL
 
 local ConsoleScreen = require "screens/consolescreen"
 
-Hook(ConsoleScreen, "OnTextEntered", function (orig, screen, ...)
+local function ShouldForceRun()
     local ctrl_down = TheInput:IsKeyDown(KEY_CTRL)
 
-    if Config.KEEPCONSOLEOPEN and not ctrl_down
+    return Config.KEEPCONSOLEOPEN and not ctrl_down
         or not Config.KEEPCONSOLEOPEN and ctrl_down
-    then
+end
+
+Hook(ConsoleScreen, "_ctor", function(constructor, screen, ...)
+    constructor(screen, ...)
+
+    local _OnTextInput = screen.console_edit.OnTextInput
+    screen.console_edit.OnTextInput = function(console_edit, text, ...)
+        if text == "\n" and ShouldForceRun() then
+            -- Block newline input to force run
+            return false
+        end
+        return _OnTextInput(console_edit, text, ...)
+    end
+end)
+
+Hook(ConsoleScreen, "OnTextEntered", function (orig, screen, ...)
+    if ShouldForceRun() then
         -- Run without closing console
         screen:Run()
         G.ConsoleScreenSettings:Save()
@@ -44,6 +60,12 @@ return {
             AssertEq(screen.console_edit:GetString(), "")
 --fooba--foobarr
             Impurities:Restore(Config, "KEEPCONSOLEOPEN")
+        end,
+        ["test force-run blocks creating newline"] = function ()
+            local screen = Tester.OpenConsole()
+            Tester.SendTextInput("[[foo")
+            Tester.WithKeysDown({ KEY_CTRL }, Tester.PressEnter)
+            Assert(screen.console_edit:GetString() == "", "expected command to force-run rather than enter newline")
         end,
     }
 }

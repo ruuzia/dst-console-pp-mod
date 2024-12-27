@@ -97,9 +97,11 @@ Hook(ConsoleScreen, "_ctor", function(constructor, screen, ...)
     local _OnTextInput = screen.console_edit.OnTextInput
     screen.console_edit.OnTextInput = function(console_edit, text, ...)
         if text == "\n" and not ShouldAllowNewline(console_edit) then
+            -- Executing the command... but actually
             -- we have to wait for OnControl and up
             -- otherwise, upon closing the console, it will also register
             -- a click for whatever happens to be beneath the mouse
+            --
             -- console_edit:OnProcess()
             return false
         elseif text == "\n" then
@@ -129,8 +131,9 @@ Hook(ConsoleScreen, "_ctor", function(constructor, screen, ...)
 
     local _OnControl = screen.console_edit.OnControl
     screen.console_edit.OnControl = function (console_edit, control, down, ...)
+        local inserting_newline = console_edit._CPM_inserting_newline
         if control == G.CONTROL_ACCEPT and not down
-            and console_edit._CPM_inserting_newline
+            and inserting_newline
         then
             -- Don't want to complete any word predictions after inserting a newline
             console_edit._CPM_inserting_newline = false
@@ -146,8 +149,9 @@ Hook(ConsoleScreen, "_ctor", function(constructor, screen, ...)
 
         if control == G.CONTROL_ACCEPT
            and not down
-           and not ShouldAllowNewline(console_edit)
+           and not inserting_newline
         then
+            -- *** RUN THE CONSOLE COMMAND ***
             console_edit:OnProcess()
             return true
         end
