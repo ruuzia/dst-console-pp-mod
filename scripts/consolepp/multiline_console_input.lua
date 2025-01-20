@@ -170,18 +170,19 @@ Hook(ConsoleScreen, "_ctor", function(constructor, screen, ...)
         return true
     end
 
-    Hook(screen.console_edit, "OnRawKey", function (orig, console_edit, key, down, ...)
+    local _OnRawKey = screen.console_edit.OnRawKey
+    screen.console_edit.OnRawKey = function (console_edit, key, down, ...)
         -- Keep prediction_widget from claiming that Shift+Enter!
         if key == KEY_ENTER and down and ShouldForceNewline(console_edit) then
             console_edit:OnTextInput("\n")
             return true
         end
 
-        local ret = orig(console_edit, key, down, ...)
+        local ret = _OnRawKey(console_edit, key, down, ...)
         -- Make backspace on line update immediately
         UpdateConsoleSize(screen)
         return ret
-    end)
+    end
 end)
 
 return {
