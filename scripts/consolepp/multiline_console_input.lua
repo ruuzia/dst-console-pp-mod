@@ -103,14 +103,18 @@ Hook(ConsoleScreen, "_ctor", function(constructor, screen, ...)
     local _OnTextInput = screen.console_edit.OnTextInput
     screen.console_edit.OnTextInput = function(console_edit, char, ...)
         if IsNewLine(char) and not ShouldAllowNewline(console_edit) then
+	    if DEBUG then print("OnTextInput", G.json.encode(char), "executing command") end
             -- Executing the command... but actually
             -- we have to wait for OnControl and up
             -- otherwise, upon closing the console, it will also register
             -- a click for whatever happens to be beneath the mouse
-            --
             -- console_edit:OnProcess()
+	    
+	    -- Just want to ensure the flag does not somehow get stuck on true
+            console_edit._CPM_inserting_newline = false
             return false
         elseif IsNewLine(char) then
+	    if DEBUG then print("OnTextInput", G.json.encode(char), "inserting newline") end
             -- Inserting newline
             -- Must make sure that the CONTROL_ACCEPT up trigger doesn't
             -- try and now complete word predictions with the changed text
@@ -123,7 +127,6 @@ Hook(ConsoleScreen, "_ctor", function(constructor, screen, ...)
             if pos == 0 then
                 console_edit.inst.TextEditWidget:OnTextInput(' ')
             end
-	
         end
         local ret = _OnTextInput(console_edit, char, ...)
         OnTextUpdate(screen)
@@ -138,30 +141,33 @@ Hook(ConsoleScreen, "_ctor", function(constructor, screen, ...)
 
     local _OnControl = screen.console_edit.OnControl
     screen.console_edit.OnControl = function (console_edit, control, down, ...)
-        local inserting_newline = console_edit._CPM_inserting_newline
-        if control == G.CONTROL_ACCEPT and not down
-            and inserting_newline
-        then
-            -- Don't want to complete any word predictions after inserting a newline
+	if control ~= G.CONTROL_ACCEPT or down then
+	    -- not interested
+	    return _OnControl(console_edit, control, down, ...)
+	end
+	if DEBUG then print("OnControl accept down", console_edit._CPM_inserting_newline) end
+
+        if console_edit._CPM_inserting_newline then
             console_edit._CPM_inserting_newline = false
-            if ShouldAllowNewline(console_edit) then
-                return true
-            end
+            -- Don't want to complete any word predictions after inserting a newline
+	    return true
         end
 
-        -- Now check if someone else needs to do something with the control
+	if TheInput:IsKeyDown(KEY_CTRL) then
+	    -- Force run
+	    console_edit:OnProcess()
+	    return true
+	end
+
+        -- Now check if anyone else (prediction widget) needs to do something with the accept
         if _OnControl(console_edit, control, down, ...) then
+	    if DEBUG then print("Control accept consumed by other") end
             return true
         end
 
-        if control == G.CONTROL_ACCEPT
-           and not down
-           and not inserting_newline
-        then
-            -- *** RUN THE CONSOLE COMMAND ***
-            console_edit:OnProcess()
-            return true
-        end
+        -- Finally, run the console command
+        console_edit:OnProcess()
+        return true
     end
 
     Hook(screen.console_edit, "OnRawKey", function (orig, console_edit, key, down, ...)
