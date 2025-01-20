@@ -14,18 +14,14 @@ Hook(TextEdit, "OnRawKey", function(orig, self, key, down)
     local active_prediction_btn = self.prediction_widget and self.prediction_widget.active_prediction_btn
 
     if down then
-        if (key == KEY_BACKSPACE or key == KEY_DELETE) and TheInput:IsKeyDown(KEY_LSUPER) then
-            local str = self:GetString()
-            local pos = self.inst.TextEditWidget:GetEditCursorPos()
-            local i = StrGetLineStart(str, pos)
-            self:SetString(str:sub(1, i-1) .. str:sub(pos+1))
-            self.inst.TextEditWidget:SetEditCursorPos(i-1)
-            return true
-
-        elseif key == KEY_BACKSPACE and ctrl_down then
+        if key == KEY_BACKSPACE and ctrl_down then
             local str = self:GetString()
             local pos = self.inst.TextEditWidget:GetEditCursorPos()
             local i = pos
+	    if G.PLATFORM == "WIN32_STEAM" then
+	        -- On Windows, backspace inputs a garbage character. Don't count it.
+		i = i - 1
+	    end
             if IsWordCharacter(str:sub(i, i)) then
                 -- move to start of word
                 while i > 0 and IsWordCharacter(str:sub(i, i)) do
@@ -40,6 +36,14 @@ Hook(TextEdit, "OnRawKey", function(orig, self, key, down)
 
             self:SetString(str:sub(1, i) .. str:sub(pos + 1))
             self.inst.TextEditWidget:SetEditCursorPos(i)
+            return true
+
+        elseif (key == KEY_BACKSPACE or key == KEY_DELETE) and TheInput:IsKeyDown(KEY_LSUPER) then
+            local str = self:GetString()
+            local pos = self.inst.TextEditWidget:GetEditCursorPos()
+            local i = StrGetLineStart(str, pos)
+            self:SetString(str:sub(1, i-1) .. str:sub(pos+1))
+            self.inst.TextEditWidget:SetEditCursorPos(i-1)
             return true
 
         elseif key == G.KEY_TAB then
