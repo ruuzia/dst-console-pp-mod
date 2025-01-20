@@ -20,6 +20,8 @@ local BACKGROUND_COLOUR = { 142/255, 123/255, 90/255, 0.85 }
 -- local BACKGROUND_COLOUR = { 0.2, 0.2, 0.2, 0.85 }
 local DECORATION_COLOUR = { 0.1, 0.1, 0.1, 0.95 }
 
+local function IsNewLine(c) return c == "\n" or c == "\r" end
+
 --- Scales the height of the console edit to allow for
 --- multiline input.
 local function UpdateConsoleSize(screen)
@@ -87,6 +89,8 @@ local function BuildFancyConsoleInput(screen)
     screen.console_edit:MoveToFront()
 end
 
+
+
 -- Screen init post-hook
 Hook(ConsoleScreen, "_ctor", function(constructor, screen, ...)
     constructor(screen, ...)
@@ -97,8 +101,8 @@ Hook(ConsoleScreen, "_ctor", function(constructor, screen, ...)
 
     -- Post hook on console input changes
     local _OnTextInput = screen.console_edit.OnTextInput
-    screen.console_edit.OnTextInput = function(console_edit, text, ...)
-        if text == "\n" and not ShouldAllowNewline(console_edit) then
+    screen.console_edit.OnTextInput = function(console_edit, char, ...)
+        if IsNewLine(char) and not ShouldAllowNewline(console_edit) then
             -- Executing the command... but actually
             -- we have to wait for OnControl and up
             -- otherwise, upon closing the console, it will also register
@@ -106,7 +110,7 @@ Hook(ConsoleScreen, "_ctor", function(constructor, screen, ...)
             --
             -- console_edit:OnProcess()
             return false
-        elseif text == "\n" then
+        elseif IsNewLine(char) then
             -- Inserting newline
             -- Must make sure that the CONTROL_ACCEPT up trigger doesn't
             -- try and now complete word predictions with the changed text
@@ -119,8 +123,9 @@ Hook(ConsoleScreen, "_ctor", function(constructor, screen, ...)
             if pos == 0 then
                 console_edit.inst.TextEditWidget:OnTextInput(' ')
             end
+	
         end
-        local ret = _OnTextInput(console_edit, text, ...)
+        local ret = _OnTextInput(console_edit, char, ...)
         OnTextUpdate(screen)
         return ret
     end
