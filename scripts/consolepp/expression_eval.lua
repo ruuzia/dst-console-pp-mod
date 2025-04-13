@@ -28,7 +28,7 @@ function ConsoleScreen:Run()
 		G.ConsoleScreenSettings:AddLastExecutedCommand(fnstr, self.toggle_remote_execute)
 	end
 
-	if self.toggle_remote_execute and TheNet:GetIsClient() and (TheNet:GetIsServerAdmin() or IsConsole()) then
+	if self.toggle_remote_execute and TheNet:GetIsClient() and (TheNet:GetIsServerAdmin() or G.IsConsole()) then
         local x, y, z = TheSim:ProjectScreenPos(TheSim:GetPosition())
         --- [NEW] ---
         if fnstr:byte() == string.byte("=") then
