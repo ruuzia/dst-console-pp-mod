@@ -80,6 +80,7 @@ FEATURES = {
         name = "pseudoclipboard",
         desc = "Ctrl+C writes current console contents to \"pseudoclipboard\" file and Ctrl+Shift+C replaces console input with content of psuedoclipboard",
         default = false,
+        add_config = "Pseudoclipboard",
     },
     {
         name = "tab_insertion",
