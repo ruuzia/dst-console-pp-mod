@@ -281,7 +281,7 @@ for i = 1, #FEATURES do
                 { data = true, description = "Enabled" },
                 { data = false, description = "Disabled" },
             },
-            default = true,
+            default = module.default == nil and true or module.default,
         }
     end
 end
